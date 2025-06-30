@@ -1,0 +1,13 @@
+Supplier Name,Item Name,Cost,Quantity,Date,Unit,Category
+FreshMeat Co,Chicken Breast,4.99,50,2024-01-15,lbs,Protein
+Alternative Foods Co,Chicken Breast,4.59,50,2024-01-15,lbs,Protein
+Ocean Fresh,Salmon Fillet,12.99,25,2024-01-15,lbs,Protein
+Premium Seafood,Salmon Fillet,11.99,25,2024-01-15,lbs,Protein
+Local Butcher,Ground Beef,6.99,40,2024-01-15,lbs,Protein
+Wholesale Meats,Ground Beef,6.49,40,2024-01-15,lbs,Protein
+Farm Fresh Produce,Lettuce,2.49,30,2024-01-15,heads,Vegetables
+Green Valley,Lettuce,2.79,30,2024-01-15,heads,Vegetables
+Farm Fresh Produce,Tomatoes,3.79,200,2024-01-15,lbs,Vegetables
+Organic Farms,Tomatoes,4.29,200,2024-01-15,lbs,Vegetables
+Dairy Suppliers Inc,Cheese Mozzarella,5.99,20,2024-01-15,lbs,Dairy
+Artisan Cheese Co,Cheese Mozzarella,7.49,20,2024-01-15,lbs,Dairy

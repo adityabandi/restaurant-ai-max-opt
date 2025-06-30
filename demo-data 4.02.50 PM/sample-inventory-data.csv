@@ -1,0 +1,11 @@
+Item Name,Quantity,Unit,Date,Expiry Date,Cost Per Unit,Category
+Chicken Breast,50,lbs,2024-01-18,2024-01-25,4.99,Protein
+Salmon Fillet,25,lbs,2024-01-18,2024-01-22,12.99,Protein
+Ground Beef,40,lbs,2024-01-18,2024-01-24,6.99,Protein
+Pizza Dough,100,units,2024-01-18,2024-01-30,0.75,Dough
+Lettuce,30,heads,2024-01-18,2024-01-28,2.49,Vegetables
+Tomatoes,200,lbs,2024-01-18,2024-01-25,3.79,Vegetables
+Onions,50,lbs,2024-01-18,2024-02-15,1.99,Vegetables
+Cheese Mozzarella,20,lbs,2024-01-18,2024-02-01,5.99,Dairy
+Flour,100,lbs,2024-01-18,2024-06-01,0.89,Dry Goods
+Chocolate,15,lbs,2024-01-18,2024-05-01,8.99,Dessert Ingredients
