@@ -30,177 +30,175 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Clean, professional CSS styling
+# Clean, modern flat design
 st.markdown("""
 <style>
-    /* Import Google Fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    /* Global Styles */
+    /* Global Styles - Clean & Flat */
     .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        font-family: 'Inter', sans-serif;
+        background-color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     }
     
     /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    .stDeployButton {display: none;}
     
-    /* Main header styling */
+    /* Main header - Simple & Clean */
     .main-header {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        padding: 2.5rem;
-        border-radius: 20px;
+        background-color: #0066cc;
+        padding: 2rem;
+        border-radius: 8px;
         color: white;
         text-align: center;
-        margin: 2rem 0;
-        box-shadow: 0 20px 40px rgba(79, 172, 254, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 2rem;
+        border: 1px solid #e1e5e9;
     }
     
     .main-header h1 {
-        font-size: 3rem;
-        font-weight: 700;
+        font-size: 2.5rem;
+        font-weight: 600;
         margin: 0;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        color: white;
     }
     
     .main-header p {
-        font-size: 1.2rem;
-        margin: 1rem 0 0 0;
+        font-size: 1.1rem;
+        margin: 0.5rem 0 0 0;
+        color: white;
         opacity: 0.9;
     }
     
-    /* Card styling */
+    /* Cards - Flat Design */
     .metric-card {
-        background: white;
-        padding: 2rem;
-        border-radius: 15px;
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
+        border: 1px solid #e1e5e9;
         margin: 1rem 0;
-        transition: all 0.3s ease;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
     }
     
     .insight-card {
-        background: white;
-        padding: 2rem;
-        border-radius: 15px;
-        margin: 1.5rem 0;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        border-left: 5px solid #4facfe;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        border: 1px solid #e1e5e9;
+        border-left: 4px solid #0066cc;
     }
     
-    .insight-card:hover {
-        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-        transform: translateY(-3px);
-    }
-    
-    .priority-high { border-left-color: #ff6b6b !important; }
-    .priority-medium { border-left-color: #feca57 !important; }
-    .priority-low { border-left-color: #48dbfb !important; }
+    .priority-high { border-left-color: #ef4444 !important; }
+    .priority-medium { border-left-color: #f59e0b !important; }
+    .priority-low { border-left-color: #10b981 !important; }
     
     .savings-highlight {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-color: #0066cc;
         color: white;
-        padding: 1.5rem;
-        border-radius: 15px;
-        font-weight: 600;
+        padding: 1rem;
+        border-radius: 8px;
         text-align: center;
-        margin: 1.5rem 0;
-        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        margin: 1rem 0;
+        font-weight: 500;
     }
     
-    /* Status indicator */
+    /* Status indicator - Clean */
     .api-status {
         position: fixed;
-        top: 20px;
-        right: 20px;
+        top: 15px;
+        right: 15px;
         z-index: 999;
-        padding: 0.8rem 1.5rem;
-        border-radius: 25px;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
         font-size: 0.9rem;
-        font-weight: 600;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        font-weight: 500;
+        border: 1px solid #e1e5e9;
     }
     
     .api-active {
-        background: linear-gradient(135deg, #48dbfb 0%, #0abde3 100%);
+        background-color: #10b981;
         color: white;
-        box-shadow: 0 4px 15px rgba(72, 219, 251, 0.4);
+        border-color: #10b981;
     }
     
     .api-fallback {
-        background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
+        background-color: #f59e0b;
         color: white;
-        box-shadow: 0 4px 15px rgba(254, 202, 87, 0.4);
+        border-color: #f59e0b;
     }
     
-    /* Upload zone */
+    /* Upload zone - Simple */
     .upload-zone {
-        border: 3px dashed #4facfe;
-        border-radius: 20px;
-        padding: 4rem;
+        border: 2px dashed #0066cc;
+        border-radius: 8px;
+        padding: 3rem;
         text-align: center;
-        background: rgba(255, 255, 255, 0.8);
+        background-color: #f8f9fa;
         margin: 2rem 0;
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
     }
     
-    .upload-zone:hover {
-        border-color: #667eea;
-        background: rgba(255, 255, 255, 0.9);
-        transform: translateY(-2px);
-    }
-    
-    /* Button styling */
+    /* Buttons - Flat & Clean */
     .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-color: #0066cc;
         color: white;
         border: none;
-        border-radius: 25px;
-        padding: 0.8rem 2rem;
-        font-weight: 600;
+        border-radius: 6px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
         font-size: 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     .stButton > button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        background-color: #0052a3;
     }
     
-    /* Form styling */
+    /* Forms - Clean */
     .stTextInput > div > div > input {
-        border-radius: 10px;
-        border: 2px solid #e1e8ed;
-        padding: 1rem;
+        border-radius: 6px;
+        border: 1px solid #e1e5e9;
+        padding: 0.75rem;
         font-size: 1rem;
-        transition: all 0.3s ease;
     }
     
     .stTextInput > div > div > input:focus {
-        border-color: #4facfe;
-        box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        border-color: #0066cc;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
     }
     
-    /* Hide streamlit elements */
-    .stDeployButton {
-        display: none;
+    /* Tabs - Clean */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: #f8f9fa;
+        border: 1px solid #e1e5e9;
+        color: #2d3748;
+        padding: 0.5rem 1rem;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: white;
+        border-bottom-color: white;
+        color: #0066cc;
+    }
+    
+    /* File uploader */
+    .stFileUploader > div > div {
+        background-color: white;
+        border: 1px solid #e1e5e9;
+        border-radius: 6px;
+        padding: 1rem;
+    }
+    
+    /* Metrics */
+    .stMetric {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 6px;
+        border: 1px solid #e1e5e9;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -424,15 +422,12 @@ class RestaurantAnalyticsApp:
         """Show main application"""
         user = st.session_state.user
         
-        # Modern header
+        # Clean header
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem;
-                    display: flex; justify-content: space-between; align-items: center;">
-            <div style="color: white;">
-                <h2 style="margin: 0; color: white;">🍽️ {user['restaurant_name'] or 'Restaurant'} Analytics</h2>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Welcome back, {user['name']}!</p>
-            </div>
+        <div style="background-color: #0066cc; padding: 1.5rem; border-radius: 8px; 
+                    margin-bottom: 2rem; border: 1px solid #e1e5e9;">
+            <h2 style="margin: 0; color: white; font-weight: 600;">🍽️ {user['restaurant_name'] or 'Restaurant'} Analytics</h2>
+            <p style="margin: 0.5rem 0 0 0; color: white; opacity: 0.9;">Welcome back, {user['name']}!</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -453,11 +448,11 @@ class RestaurantAnalyticsApp:
     
     def _show_upload_section(self):
         """Show modern file upload section"""
-        # Hero section
+        # Clean hero section
         st.markdown("""
         <div style="text-align: center; padding: 2rem 0;">
-            <h2 style="color: #667eea; font-weight: 700;">📊 Upload Your Restaurant Data</h2>
-            <p style="font-size: 1.2rem; color: #666; margin-bottom: 2rem;">
+            <h2 style="color: #2d3748; font-weight: 600;">📊 Upload Your Restaurant Data</h2>
+            <p style="font-size: 1.1rem; color: #6b7280; margin-bottom: 2rem;">
                 Get instant insights that save $1,200+ monthly
             </p>
         </div>
@@ -626,16 +621,16 @@ class RestaurantAnalyticsApp:
         with col1:
             st.markdown(f"""
             <div class="metric-card">
-                <h2 style="color: #00b894; margin: 0;">${total_savings:,.0f}</h2>
-                <p style="margin: 0;">Monthly Savings</p>
+                <h2 style="color: #10b981; margin: 0; font-weight: 600;">${total_savings:,.0f}</h2>
+                <p style="margin: 0; color: #6b7280;">Monthly Savings</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col2:
             st.markdown(f"""
             <div class="metric-card">
-                <h2 style="color: #6c5ce7; margin: 0;">{len(insights)}</h2>
-                <p style="margin: 0;">AI Insights</p>
+                <h2 style="color: #0066cc; margin: 0; font-weight: 600;">{len(insights)}</h2>
+                <p style="margin: 0; color: #6b7280;">AI Insights</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -643,16 +638,16 @@ class RestaurantAnalyticsApp:
             efficiency_score = min(85 + len(insights) * 2, 95)
             st.markdown(f"""
             <div class="metric-card">
-                <h2 style="color: #fd79a8; margin: 0;">{efficiency_score}%</h2>
-                <p style="margin: 0;">Efficiency Score</p>
+                <h2 style="color: #f59e0b; margin: 0; font-weight: 600;">{efficiency_score}%</h2>
+                <p style="margin: 0; color: #6b7280;">Efficiency Score</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col4:
             st.markdown(f"""
             <div class="metric-card">
-                <h2 style="color: #00cec9; margin: 0;">${total_savings * 12:,.0f}</h2>
-                <p style="margin: 0;">Annual Impact</p>
+                <h2 style="color: #0066cc; margin: 0; font-weight: 600;">${total_savings * 12:,.0f}</h2>
+                <p style="margin: 0; color: #6b7280;">Annual Impact</p>
             </div>
             """, unsafe_allow_html=True)
         
