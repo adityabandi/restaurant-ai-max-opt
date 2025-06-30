@@ -374,9 +374,10 @@ st.markdown("""
 
 class RestaurantAnalyticsApp:
     def __init__(self):
-        self.db = RestaurantDB()
+        # Skip database for now to avoid login issues
+        self.db = None
         self.parser = AIExcelParser()
-        self.weather = WeatherIntelligence(self.db)
+        self.weather = WeatherIntelligence(None)  # Pass None for db
         self.revenue_analyzer = RevenueAnalyzer()
         
         # Check API status
@@ -432,11 +433,8 @@ class RestaurantAnalyticsApp:
         # Show API status
         self._show_api_status()
         
-        # Check if user is logged in
-        if st.session_state.user is None:
-            self._show_auth_page()
-        else:
-            self._show_main_app()
+        # Skip auth for now - go straight to main app
+        self._show_main_app()
     
     def _show_api_status(self):
         """Show API status indicator"""
@@ -589,30 +587,19 @@ class RestaurantAnalyticsApp:
     
     def _show_main_app(self):
         """Show main application"""
-        user = st.session_state.user
-        
-        # Beautiful dashboard header
-        st.markdown(f"""
+        # Beautiful dashboard header (no user needed)
+        st.markdown("""
         <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
                     padding: 2rem; border-radius: 16px; margin-bottom: 3rem;
                     box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
                     border: 1px solid rgba(255, 255, 255, 0.1);
                     position: relative; overflow: hidden;">
             <div style="position: relative; z-index: 1;">
-                <h2 style="margin: 0; color: white; font-weight: 700; font-size: 2rem;">🍽️ {user['restaurant_name'] or 'Restaurant'} Analytics</h2>
-                <p style="margin: 0.75rem 0 0 0; color: white; opacity: 0.95; font-size: 1.1rem;">Welcome back, {user['name']}! Ready to save money?</p>
+                <h2 style="margin: 0; color: white; font-weight: 700; font-size: 2rem;">🍽️ Restaurant AI Analytics</h2>
+                <p style="margin: 0.75rem 0 0 0; color: white; opacity: 0.95; font-size: 1.1rem;">Transform your restaurant data into actionable insights that save $1,200+ monthly</p>
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Sign out button in sidebar or top
-        col1, col2, col3 = st.columns([4, 1, 1])
-        with col3:
-            if st.button("🚪 Sign Out", type="secondary"):
-                st.session_state.user = None
-                st.session_state.uploaded_data = None
-                st.session_state.insights = []
-                st.rerun()
         
         # Main content
         if st.session_state.uploaded_data is None:
@@ -705,21 +692,10 @@ class RestaurantAnalyticsApp:
                 parsing_result = self.parser.parse_file(file_contents, uploaded_file.name)
                 
                 if parsing_result['success']:
-                    # Save to database
-                    user_id = st.session_state.user['id']
-                    upload_id = self.db.save_data_upload(
-                        user_id=user_id,
-                        filename=uploaded_file.name,
-                        data_type=parsing_result['data_type'],
-                        columns_detected=parsing_result['columns_mapped'],
-                        rows_processed=parsing_result['rows_processed'],
-                        file_size=len(file_contents)
-                    )
-                    
-                    # Store processed data
+                    # Store processed data (skip database for now)
                     processed_data = parsing_result['processed_data']
                     st.session_state.uploaded_data = {
-                        'upload_id': upload_id,
+                        'upload_id': 'temp',
                         'filename': uploaded_file.name,
                         'data_type': parsing_result['data_type'],
                         'data': processed_data,
@@ -778,22 +754,13 @@ class RestaurantAnalyticsApp:
             menu_analysis = self.revenue_analyzer.analyze_menu_performance(data)
             insights = self.revenue_analyzer.generate_actionable_insights(menu_analysis)
         
-        # Add weather insights if location available
-        user = st.session_state.user
-        if user.get('restaurant_location'):
-            weather_insights = self._get_weather_insights(user['restaurant_location'])
-            insights.extend(weather_insights)
+        # Add weather insights for demo (skip user-specific location)
+        # For now, use a demo location
+        demo_location = "New York, NY"
+        weather_insights = self._get_weather_insights(demo_location)
+        insights.extend(weather_insights)
         
         st.session_state.insights = insights
-        
-        # Save insights to database
-        for insight in insights:
-            self.db.save_user_insight(
-                user_id=user['id'],
-                insight_type=insight.get('type', 'general'),
-                insight_data=insight,
-                savings_potential=insight.get('savings_potential', 0)
-            )
     
     def _get_weather_insights(self, location: str) -> List[Dict]:
         """Get weather-based insights"""
@@ -1043,11 +1010,8 @@ class RestaurantAnalyticsApp:
     
     def _show_weather_section(self):
         """Show weather insights section"""
-        user = st.session_state.user
-        location = user.get('restaurant_location')
-        
-        if not location:
-            return
+        # Use demo location for now
+        location = "New York, NY"
         
         st.markdown("### 🌤️ Weather Intelligence")
         

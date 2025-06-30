@@ -248,12 +248,13 @@ class WeatherIntelligence:
     
     def get_forecast(self, location: str, days: int = 7) -> Optional[Dict]:
         """Get weather forecast for location"""
-        # Check cache first
-        today = datetime.now().strftime('%Y-%m-%d')
-        cached_weather = self.db.get_weather_cache(location, today)
-        
-        if cached_weather:
-            return cached_weather
+        # Check cache first (skip if no database)
+        if self.db:
+            today = datetime.now().strftime('%Y-%m-%d')
+            cached_weather = self.db.get_weather_cache(location, today)
+            
+            if cached_weather:
+                return cached_weather
         
         coords = self.get_location_coordinates(location)
         if not coords:
@@ -285,8 +286,9 @@ class WeatherIntelligence:
                     'updated_at': datetime.now().isoformat()
                 }
                 
-                # Cache the forecast
-                self.db.save_weather_cache(location, today, forecast_data)
+                # Cache the forecast (skip if no database)
+                if self.db:
+                    self.db.save_weather_cache(location, today, forecast_data)
                 
                 return forecast_data
         except Exception as e:
