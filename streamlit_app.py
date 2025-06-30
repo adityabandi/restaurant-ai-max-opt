@@ -236,10 +236,10 @@ class RestaurantAnalyticsApp:
         # Check API status
         self.api_status = self._check_api_status()
         
-        # Initialize session state
-        if 'uploaded_data' not in st.session_state:
+        # Initialize session state safely
+        if not hasattr(st.session_state, 'uploaded_data'):
             st.session_state.uploaded_data = None
-        if 'insights' not in st.session_state:
+        if not hasattr(st.session_state, 'insights'):
             st.session_state.insights = []
     
     def _check_api_status(self):
@@ -293,7 +293,7 @@ class RestaurantAnalyticsApp:
         """, unsafe_allow_html=True)
         
         # Main content
-        if st.session_state.uploaded_data is None:
+        if not hasattr(st.session_state, 'uploaded_data') or st.session_state.uploaded_data is None:
             self._show_upload_section()
         else:
             self._show_dashboard()
@@ -422,20 +422,37 @@ class RestaurantAnalyticsApp:
     
     def _show_dashboard(self):
         """Show the main dashboard with insights"""
-        data = st.session_state.uploaded_data
-        insights = st.session_state.insights
+        # Safely get session state data
+        data = getattr(st.session_state, 'uploaded_data', None)
+        insights = getattr(st.session_state, 'insights', [])
+        
+        # Check if we have valid data
+        if not data or 'processed_data' not in data:
+            st.error("No data available. Please upload a file first.")
+            if st.button("← Go Back to Upload"):
+                st.session_state.uploaded_data = None
+                st.rerun()
+            return
         
         # Header with upload info
-        st.markdown(f"""
-        <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 2rem;">
-            <h3 style="margin: 0; color: #1a1a1a;">📊 {data['filename']}</h3>
-            <p style="margin: 0.5rem 0 0 0; color: #6b7280;">
-                {len(data['processed_data'])} items analyzed • 
-                {data['data_type'].title()} data • 
-                {data['ai_confidence']*100:.0f}% confidence
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        try:
+            items_count = len(data.get('processed_data', []))
+            filename = data.get('filename', 'Unknown file')
+            data_type = data.get('data_type', 'unknown')
+            confidence = data.get('ai_confidence', 0.8)
+            
+            st.markdown(f"""
+            <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 2rem;">
+                <h3 style="margin: 0; color: #1a1a1a;">📊 {filename}</h3>
+                <p style="margin: 0.5rem 0 0 0; color: #6b7280;">
+                    {items_count} items analyzed • 
+                    {data_type.title()} data • 
+                    {confidence*100:.0f}% confidence
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"Error displaying dashboard header: {str(e)}")
         
         if st.button("← Upload New Data", type="secondary"):
             st.session_state.uploaded_data = None
@@ -449,7 +466,7 @@ class RestaurantAnalyticsApp:
             self._show_revenue_insights(insights)
         
         with tab2:
-            self._show_data_overview(data['processed_data'])
+            self._show_data_overview(data.get('processed_data', []))
         
         with tab3:
             self._show_weather_insights(insights)
