@@ -670,3 +670,30 @@ class RevenueAnalyzer:
             })
         
         return insights
+    
+    def _guess_item_category(self, item_name: str) -> str:
+        """Intelligently guess item category from name"""
+        if not item_name:
+            return 'default'
+            
+        name_lower = item_name.lower()
+        
+        # Enhanced category mapping
+        category_keywords = {
+            'appetizers': ['appetizer', 'starter', 'wings', 'nachos', 'calamari', 'bruschetta', 'sampler', 'bites', 'dip'],
+            'salads': ['salad', 'caesar', 'greek', 'cobb', 'garden', 'greens'],
+            'sandwiches': ['burger', 'sandwich', 'wrap', 'club', 'panini', 'melt'],
+            'pizza': ['pizza', 'flatbread', 'calzone'],
+            'pasta': ['pasta', 'spaghetti', 'fettuccine', 'linguine', 'penne', 'ravioli', 'lasagna'],
+            'entrees': ['steak', 'chicken', 'fish', 'salmon', 'lamb', 'pork', 'beef', 'duck', 'entree'],
+            'desserts': ['dessert', 'cake', 'pie', 'ice cream', 'chocolate', 'cheesecake', 'tiramisu'],
+            'beverages': ['coffee', 'tea', 'soda', 'juice', 'water', 'beer', 'wine', 'cocktail', 'latte', 'cappuccino'],
+            'soups': ['soup', 'bisque', 'chowder', 'broth'],
+            'sides': ['fries', 'rice', 'vegetables', 'potato', 'bread', 'side']
+        }
+        
+        for category, keywords in category_keywords.items():
+            if any(keyword in name_lower for keyword in keywords):
+                return category
+        
+        return 'default'
