@@ -138,6 +138,19 @@ class RevenueAnalyzer:
                 'holiday_indulgence': 1.30             # Premium/indulgent items
             }
         }
+        
+        # Labor time estimates by category (in minutes)
+        self.labor_estimates = {
+            'appetizer': 5,
+            'salad': 8,
+            'burger': 12,
+            'pizza': 15,
+            'pasta': 10,
+            'entree': 18,
+            'dessert': 6,
+            'beverage': 3,
+            'default': 10
+        }
     
     def analyze_menu_performance(self, sales_data: List[Dict]) -> Dict:
         """Comprehensive menu performance analysis"""
