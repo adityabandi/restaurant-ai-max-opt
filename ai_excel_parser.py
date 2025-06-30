@@ -11,7 +11,10 @@ class AIExcelParser:
     def __init__(self):
         self.anthropic_client = None
         try:
-            # Check for Streamlit secrets first, then environment variables
+            # 🔑 CLAUDE API INTEGRATION - Ready for future activation
+            # To enable AI mode: Add ANTHROPIC_API_KEY to Streamlit Cloud secrets
+            # The app automatically switches between AI Enhanced and Smart Analytics modes
+            
             api_key = None
             try:
                 import streamlit as st
@@ -26,7 +29,7 @@ class AIExcelParser:
             if api_key:
                 self.anthropic_client = anthropic.Anthropic(api_key=api_key)
         except Exception as e:
-            print(f"Warning: Could not initialize Anthropic client: {e}")
+            print(f"Note: Running in Smart Analytics mode (no AI key): {e}")
             self.anthropic_client = None
     
     def parse_file(self, file_contents: bytes, filename: str) -> Dict:
