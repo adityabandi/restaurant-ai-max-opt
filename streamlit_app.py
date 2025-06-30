@@ -127,19 +127,37 @@ st.markdown("""
     
     /* === CLEAN BUTTONS === */
     .stButton > button {
-        background-color: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 500;
-        font-size: 1rem;
-        transition: background-color 0.2s ease;
-        cursor: pointer;
+        background-color: #2563eb !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 500 !important;
+        font-size: 1rem !important;
+        transition: background-color 0.2s ease !important;
+        cursor: pointer !important;
     }
     
     .stButton > button:hover {
-        background-color: #1d4ed8;
+        background-color: #1d4ed8 !important;
+        color: white !important;
+    }
+    
+    .stButton > button:focus {
+        background-color: #1d4ed8 !important;
+        color: white !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3) !important;
+    }
+    
+    /* Force button text visibility */
+    .stButton button p {
+        color: white !important;
+        margin: 0 !important;
+    }
+    
+    .stButton button div {
+        color: white !important;
     }
     
     /* === CLEAN INPUTS === */
@@ -414,8 +432,21 @@ class RestaurantAnalyticsApp:
         
         # Add weather insights for demo
         if self.api_status['weather']:
-            weather_insights = self.weather.generate_weather_insights({}, 'demo_location')
-            insights.extend(weather_insights[:3])  # Add top 3 weather insights
+            try:
+                # Get mock forecast data for demo
+                mock_forecast = {
+                    'daily': {
+                        'temperature_2m_max': [75, 68, 72],
+                        'precipitation_sum': [0.1, 0.0, 0.5],
+                        'wind_speed_10m_max': [8, 12, 6],
+                        'time': ['2023-01-01', '2023-01-02', '2023-01-03']
+                    }
+                }
+                weather_insights = self.weather.analyze_weather_impact(mock_forecast, 'casual_dining')
+                insights.extend(weather_insights[:3])  # Add top 3 weather insights
+            except Exception as e:
+                # Skip weather insights if there's an error
+                pass
         
         # Store insights
         st.session_state.insights = insights
