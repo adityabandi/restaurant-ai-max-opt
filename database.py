@@ -90,6 +90,122 @@ class RestaurantDB:
             )
         ''')
         
+        # Enhanced tables for intelligent analytics
+        
+        # Menu items master table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS menu_items (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                item_name TEXT NOT NULL,
+                category TEXT,
+                base_cost REAL,
+                target_price REAL,
+                prep_time_minutes INTEGER,
+                complexity_score INTEGER,
+                active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        
+        # Individual sales transactions
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sales_transactions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                menu_item_id TEXT,
+                item_name TEXT NOT NULL,
+                transaction_date DATE,
+                transaction_time TIME,
+                quantity INTEGER,
+                unit_price REAL,
+                total_amount REAL,
+                day_of_week INTEGER,
+                hour_of_day INTEGER,
+                weather_temp_f INTEGER,
+                weather_condition TEXT,
+                upload_batch_id TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (menu_item_id) REFERENCES menu_items (id)
+            )
+        ''')
+        
+        # Customer behavior patterns
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS customer_behavior_patterns (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                pattern_type TEXT NOT NULL,
+                pattern_data TEXT NOT NULL,
+                confidence_score REAL,
+                identified_date DATE,
+                impact_estimate REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        
+        # Menu performance metrics (daily aggregated)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS menu_performance_metrics (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                menu_item_id TEXT,
+                item_name TEXT NOT NULL,
+                date DATE,
+                total_quantity INTEGER,
+                total_revenue REAL,
+                avg_price REAL,
+                profit_margin REAL,
+                rank_by_revenue INTEGER,
+                rank_by_quantity INTEGER,
+                weather_impact_score REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (menu_item_id) REFERENCES menu_items (id)
+            )
+        ''')
+        
+        # Enhanced actionable insights
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS actionable_insights (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                insight_type TEXT NOT NULL,
+                priority TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                recommendation TEXT,
+                savings_potential REAL,
+                confidence_score REAL,
+                action_items TEXT,
+                affected_items TEXT,
+                status TEXT DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        
+        # Trend analysis
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS trend_analysis (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                trend_type TEXT NOT NULL,
+                trend_data TEXT NOT NULL,
+                start_date DATE,
+                end_date DATE,
+                strength REAL,
+                prediction_accuracy REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        
         conn.commit()
         conn.close()
     
@@ -312,3 +428,160 @@ class RestaurantDB:
         
         conn.commit()
         conn.close()
+    
+    # Enhanced methods for intelligent analytics
+    
+    def save_sales_transactions(self, user_id: str, transactions: List[Dict], upload_batch_id: str):
+        """Save individual sales transactions for intelligent analysis"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        for transaction in transactions:
+            transaction_id = str(uuid.uuid4())
+            
+            cursor.execute('''
+                INSERT INTO sales_transactions 
+                (id, user_id, item_name, transaction_date, transaction_time, 
+                 quantity, unit_price, total_amount, upload_batch_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                transaction_id, user_id, 
+                transaction.get('item_name', ''),
+                transaction.get('date'),
+                transaction.get('time'),
+                transaction.get('quantity', 0),
+                transaction.get('price', 0),
+                transaction.get('total_amount', 0),
+                upload_batch_id
+            ))
+        
+        conn.commit()
+        conn.close()
+        return len(transactions)
+    
+    def upsert_menu_item(self, user_id: str, item_name: str, category: str = None, 
+                        base_cost: float = None, target_price: float = None):
+        """Create or update menu item"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Check if item exists
+        cursor.execute('SELECT id FROM menu_items WHERE user_id = ? AND item_name = ?', 
+                      (user_id, item_name))
+        existing = cursor.fetchone()
+        
+        if existing:
+            # Update existing
+            cursor.execute('''
+                UPDATE menu_items 
+                SET category = COALESCE(?, category),
+                    base_cost = COALESCE(?, base_cost),
+                    target_price = COALESCE(?, target_price),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ''', (category, base_cost, target_price, existing[0]))
+            item_id = existing[0]
+        else:
+            # Create new
+            item_id = str(uuid.uuid4())
+            cursor.execute('''
+                INSERT INTO menu_items (id, user_id, item_name, category, base_cost, target_price)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (item_id, user_id, item_name, category, base_cost, target_price))
+        
+        conn.commit()
+        conn.close()
+        return item_id
+    
+    def save_actionable_insight(self, user_id: str, insight: Dict):
+        """Save intelligent insight to database"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        insight_id = str(uuid.uuid4())
+        
+        cursor.execute('''
+            INSERT INTO actionable_insights 
+            (id, user_id, insight_type, priority, title, description, 
+             recommendation, savings_potential, confidence_score, 
+             action_items, affected_items)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            insight_id, user_id,
+            insight.get('type', 'general'),
+            insight.get('priority', 'medium'),
+            insight.get('title', ''),
+            insight.get('description', ''),
+            insight.get('recommendation', ''),
+            insight.get('savings_potential', 0),
+            insight.get('confidence_score', 0.8),
+            json.dumps(insight.get('action_items', [])),
+            json.dumps(insight.get('affected_items', []))
+        ))
+        
+        conn.commit()
+        conn.close()
+        return insight_id
+    
+    def get_menu_performance_data(self, user_id: str, days: int = 30) -> List[Dict]:
+        """Get menu performance data for analysis"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT item_name, 
+                   SUM(quantity) as total_quantity,
+                   SUM(total_amount) as total_revenue,
+                   AVG(unit_price) as avg_price,
+                   COUNT(DISTINCT transaction_date) as days_sold
+            FROM sales_transactions 
+            WHERE user_id = ? AND transaction_date >= date('now', '-' || ? || ' days')
+            GROUP BY item_name
+            ORDER BY total_revenue DESC
+        ''', (user_id, days))
+        
+        results = []
+        for row in cursor.fetchall():
+            results.append({
+                'item_name': row[0],
+                'total_quantity': row[1],
+                'total_revenue': row[2],
+                'avg_price': row[3],
+                'days_sold': row[4]
+            })
+        
+        conn.close()
+        return results
+    
+    def get_time_based_patterns(self, user_id: str) -> Dict:
+        """Analyze time-based sales patterns"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Hour of day analysis
+        cursor.execute('''
+            SELECT hour_of_day, SUM(total_amount) as hourly_revenue
+            FROM sales_transactions 
+            WHERE user_id = ? AND hour_of_day IS NOT NULL
+            GROUP BY hour_of_day
+            ORDER BY hour_of_day
+        ''', (user_id,))
+        
+        hourly_data = {row[0]: row[1] for row in cursor.fetchall()}
+        
+        # Day of week analysis
+        cursor.execute('''
+            SELECT day_of_week, SUM(total_amount) as daily_revenue
+            FROM sales_transactions 
+            WHERE user_id = ? AND day_of_week IS NOT NULL
+            GROUP BY day_of_week
+            ORDER BY day_of_week
+        ''', (user_id,))
+        
+        daily_data = {row[0]: row[1] for row in cursor.fetchall()}
+        
+        conn.close()
+        return {
+            'hourly_patterns': hourly_data,
+            'daily_patterns': daily_data
+        }

@@ -151,43 +151,97 @@ class AIExcelParser:
         return json.dumps(sample_info, indent=2)
     
     def _claude_analysis(self, sample_data: str, filename: str) -> Dict:
-        """Use Claude to analyze the data structure"""
+        """Use Claude to analyze the data structure with enhanced intelligence"""
         prompt = f"""
-        You are an expert data analyst specializing in restaurant data. Analyze this Excel/CSV data and determine:
+        You are an expert restaurant data scientist and business intelligence analyst. Perform DEEP ANALYSIS of this restaurant data to extract ALL possible business intelligence.
 
-        1. What type of restaurant data this is (sales/pos, inventory, supplier/invoice, accounting, or other)
-        2. Map the columns to standard restaurant data fields
-        3. Provide confidence score (0-1)
-        4. Suggest any data quality improvements
+        TASK: Analyze this data comprehensively and provide intelligent field mapping and business context.
 
         Filename: {filename}
         Data sample:
         {sample_data}
 
-        Respond with valid JSON in this exact format:
+        RESPOND WITH COMPREHENSIVE JSON:
         {{
-            "data_type": "sales|inventory|supplier|accounting|other",
+            "data_type": "sales|pos_export|inventory|supplier|accounting|catering|delivery|other",
+            "pos_system": "toast|square|clover|resy|opentable|uber_eats|doordash|custom|unknown",
             "confidence": 0.95,
-            "column_mapping": {{
-                "original_column_name": "standard_field_name"
+            "restaurant_type": "quick_service|casual_dining|fine_dining|bar|coffee_shop|catering|unknown",
+            "time_period_detected": "single_day|week|month|quarter|year|unknown",
+            
+            "column_intelligence": {{
+                "item_identifiers": ["exact column names for menu items"],
+                "revenue_fields": ["exact column names for revenue/sales"],
+                "quantity_fields": ["exact column names for quantities"],
+                "price_fields": ["exact column names for unit prices"],
+                "cost_fields": ["exact column names for costs/COGS"],
+                "date_time_fields": ["exact column names for dates/times"],
+                "category_fields": ["exact column names for categories"],
+                "customer_fields": ["exact column names for customer data"],
+                "payment_fields": ["exact column names for payment methods"],
+                "location_fields": ["exact column names for locations/stores"],
+                "staff_fields": ["exact column names for staff/servers"],
+                "tax_fields": ["exact column names for taxes"],
+                "discount_fields": ["exact column names for discounts"],
+                "tip_fields": ["exact column names for tips"]
             }},
-            "standard_fields": {{
-                "item_name": "column_name_or_null",
-                "quantity": "column_name_or_null",
-                "price": "column_name_or_null",
-                "total_amount": "column_name_or_null",
-                "date": "column_name_or_null",
-                "category": "column_name_or_null"
+            
+            "business_intelligence": {{
+                "price_range": "budget|mid_tier|premium|luxury",
+                "menu_complexity": "simple|moderate|complex|very_complex",
+                "avg_transaction_size": "estimated from data",
+                "peak_patterns_detectable": true/false,
+                "seasonal_items_present": true/false,
+                "delivery_vs_dine_in": "delivery_heavy|mixed|dine_in_heavy|unknown"
             }},
-            "suggestions": ["suggestion1", "suggestion2"],
-            "reasoning": "brief explanation of analysis"
+            
+            "data_quality": {{
+                "completeness": 0.85,
+                "consistency_score": 0.90,
+                "anomalies_detected": ["specific issues found"],
+                "missing_critical_fields": ["what's missing for full analysis"]
+            }},
+            
+            "smart_insights_possible": [
+                "menu_engineering_analysis",
+                "pricing_optimization",
+                "peak_hour_identification", 
+                "cross_sell_analysis",
+                "customer_behavior_patterns",
+                "operational_efficiency",
+                "seasonal_trend_analysis",
+                "profit_margin_optimization"
+            ],
+            
+            "standard_field_mapping": {{
+                "item_name": "exact_column_name_or_null",
+                "quantity": "exact_column_name_or_null",
+                "unit_price": "exact_column_name_or_null", 
+                "total_amount": "exact_column_name_or_null",
+                "date": "exact_column_name_or_null",
+                "time": "exact_column_name_or_null",
+                "category": "exact_column_name_or_null",
+                "cost": "exact_column_name_or_null",
+                "customer_id": "exact_column_name_or_null",
+                "payment_method": "exact_column_name_or_null",
+                "server": "exact_column_name_or_null",
+                "location": "exact_column_name_or_null",
+                "tax_amount": "exact_column_name_or_null",
+                "discount_amount": "exact_column_name_or_null",
+                "tip_amount": "exact_column_name_or_null"
+            }},
+            
+            "intelligent_recommendations": [
+                "specific suggestions for data optimization",
+                "business insights that can be generated",
+                "data collection improvements"
+            ],
+            
+            "reasoning": "detailed explanation of analysis and business context"
         }}
 
-        Standard field mappings:
-        - Sales data: item_name, quantity, price, total_amount, date, category
-        - Inventory data: item_name, quantity, unit, cost_per_unit, location
-        - Supplier data: supplier_name, item_name, quantity, unit_cost, total_cost, date
-        - Accounting data: account_name, debit_amount, credit_amount, date, description
+        IMPORTANT: Be extremely specific with column names. If you see "Item Name", map it exactly as "Item Name", not "item_name".
+        Focus on extracting MAXIMUM business intelligence from whatever data is available.
         """
 
         try:
@@ -314,36 +368,189 @@ class AIExcelParser:
             }
     
     def _process_based_on_analysis(self, df: pd.DataFrame, analysis: Dict) -> List[Dict]:
-        """Process the data based on AI analysis"""
+        """Process the data with enhanced intelligence extraction"""
         processed_records = []
-        column_mapping = analysis.get('column_mapping', {})
+        field_mapping = analysis.get('standard_field_mapping', {})
         
-        for _, row in df.iterrows():
+        # Extract business intelligence from analysis
+        pos_system = analysis.get('pos_system', 'unknown')
+        restaurant_type = analysis.get('restaurant_type', 'unknown')
+        business_intel = analysis.get('business_intelligence', {})
+        
+        for index, row in df.iterrows():
             record = {}
             
-            # Map columns based on AI analysis
-            for original_col, standard_field in column_mapping.items():
-                if original_col in df.columns:
-                    value = row[original_col]
+            # Map fields based on enhanced AI analysis
+            for standard_field, column_name in field_mapping.items():
+                if column_name and column_name in df.columns:
+                    value = row[column_name]
                     
                     if pd.isna(value):
                         record[standard_field] = None
                     else:
-                        # Clean and convert based on field type
-                        if standard_field in ['quantity', 'price', 'total_amount', 'cost_per_unit', 'unit_cost']:
-                            record[standard_field] = self._safe_numeric(value)
-                        elif standard_field == 'date':
-                            record[standard_field] = self._safe_date(value)
-                        else:
-                            record[standard_field] = str(value).strip()
+                        # Intelligent data cleaning and conversion
+                        record[standard_field] = self._intelligent_field_processing(
+                            value, standard_field, pos_system, restaurant_type
+                        )
+            
+            # Extract temporal intelligence if date/time available
+            if record.get('date') or record.get('time'):
+                temporal_intel = self._extract_temporal_intelligence(record, row)
+                record.update(temporal_intel)
+            
+            # Infer missing data using business intelligence
+            record = self._infer_missing_data(record, business_intel, analysis)
+            
+            # Add enhanced metadata
+            record['_metadata'] = {
+                'pos_system': pos_system,
+                'restaurant_type': restaurant_type,
+                'data_confidence': analysis.get('confidence', 0.8),
+                'row_index': index,
+                'processing_timestamp': datetime.now().isoformat()
+            }
             
             # Keep original data for reference
             record['_original'] = {col: str(row[col]) if not pd.isna(row[col]) else None for col in df.columns}
             
-            if record:  # Only add non-empty records
+            if record.get('item_name'):  # Only add records with item names
                 processed_records.append(record)
         
         return processed_records
+    
+    def _intelligent_field_processing(self, value, field_type: str, pos_system: str, restaurant_type: str):
+        """Intelligently process field values based on context"""
+        if field_type in ['quantity', 'unit_price', 'total_amount', 'cost', 'tax_amount', 'discount_amount', 'tip_amount']:
+            return self._safe_numeric(value)
+        elif field_type in ['date', 'time']:
+            return self._safe_date(value)
+        elif field_type == 'item_name':
+            # Clean and standardize item names
+            cleaned_name = str(value).strip()
+            # Remove common POS system prefixes/suffixes
+            if pos_system == 'toast':
+                cleaned_name = cleaned_name.replace('[MODIFIER]', '').strip()
+            elif pos_system == 'square':
+                cleaned_name = cleaned_name.replace('(Modifier)', '').strip()
+            return cleaned_name
+        elif field_type == 'category':
+            # Standardize category names
+            category = str(value).strip().title()
+            # Map common variations
+            category_mapping = {
+                'Apps': 'Appetizers', 'Starters': 'Appetizers',
+                'Mains': 'Entrees', 'Main Courses': 'Entrees',
+                'Drinks': 'Beverages', 'Bevs': 'Beverages'
+            }
+            return category_mapping.get(category, category)
+        else:
+            return str(value).strip()
+    
+    def _extract_temporal_intelligence(self, record: Dict, row) -> Dict:
+        """Extract time-based intelligence"""
+        temporal_data = {}
+        
+        try:
+            # Parse date if available
+            if record.get('date'):
+                date_obj = pd.to_datetime(record['date'])
+                temporal_data.update({
+                    'day_of_week': date_obj.weekday(),  # 0=Monday, 6=Sunday
+                    'week_of_year': date_obj.isocalendar()[1],
+                    'month': date_obj.month,
+                    'quarter': (date_obj.month - 1) // 3 + 1,
+                    'is_weekend': date_obj.weekday() >= 5
+                })
+            
+            # Parse time if available
+            if record.get('time'):
+                time_obj = pd.to_datetime(record['time'])
+                hour = time_obj.hour
+                temporal_data.update({
+                    'hour_of_day': hour,
+                    'time_period': self._categorize_time_period(hour),
+                    'is_peak_hour': hour in [11, 12, 13, 18, 19, 20]  # Common peak hours
+                })
+                
+        except Exception as e:
+            # If time parsing fails, continue without temporal data
+            pass
+        
+        return temporal_data
+    
+    def _categorize_time_period(self, hour: int) -> str:
+        """Categorize hour into business periods"""
+        if 6 <= hour < 11:
+            return 'breakfast'
+        elif 11 <= hour < 16:
+            return 'lunch'
+        elif 16 <= hour < 21:
+            return 'dinner'
+        elif 21 <= hour < 24:
+            return 'late_night'
+        else:
+            return 'overnight'
+    
+    def _infer_missing_data(self, record: Dict, business_intel: Dict, analysis: Dict) -> Dict:
+        """Intelligently infer missing data using business context"""
+        
+        # Infer category if missing but we have item name
+        if not record.get('category') and record.get('item_name'):
+            record['category'] = self._infer_category_from_name(record['item_name'])
+        
+        # Estimate cost if missing (use 30% food cost ratio as default)
+        if not record.get('cost') and record.get('unit_price'):
+            record['estimated_cost'] = record['unit_price'] * 0.30
+        
+        # Calculate total if missing but have price and quantity
+        if not record.get('total_amount') and record.get('unit_price') and record.get('quantity'):
+            record['total_amount'] = record['unit_price'] * record['quantity']
+        
+        # Infer restaurant insights
+        if business_intel:
+            record['_business_context'] = {
+                'price_tier': business_intel.get('price_range', 'unknown'),
+                'menu_complexity': business_intel.get('menu_complexity', 'unknown'),
+                'service_style': self._infer_service_style(business_intel)
+            }
+        
+        return record
+    
+    def _infer_category_from_name(self, item_name: str) -> str:
+        """Infer category from item name using smart matching"""
+        name_lower = item_name.lower()
+        
+        # Enhanced category mapping
+        category_keywords = {
+            'appetizers': ['appetizer', 'starter', 'wings', 'nachos', 'calamari', 'bruschetta', 'sampler', 'bites'],
+            'salads': ['salad', 'caesar', 'greek', 'cobb', 'garden', 'greens'],
+            'sandwiches': ['burger', 'sandwich', 'wrap', 'club', 'panini', 'melt'],
+            'pizza': ['pizza', 'flatbread', 'calzone'],
+            'pasta': ['pasta', 'spaghetti', 'fettuccine', 'linguine', 'penne', 'ravioli', 'lasagna'],
+            'entrees': ['steak', 'chicken', 'fish', 'salmon', 'lamb', 'pork', 'beef', 'duck', 'entree'],
+            'desserts': ['dessert', 'cake', 'pie', 'ice cream', 'chocolate', 'cheesecake', 'tiramisu'],
+            'beverages': ['coffee', 'tea', 'soda', 'juice', 'water', 'beer', 'wine', 'cocktail', 'latte', 'cappuccino'],
+            'soups': ['soup', 'bisque', 'chowder', 'broth'],
+            'sides': ['fries', 'rice', 'vegetables', 'potato', 'bread', 'side']
+        }
+        
+        for category, keywords in category_keywords.items():
+            if any(keyword in name_lower for keyword in keywords):
+                return category.title()
+        
+        return 'Other'
+    
+    def _infer_service_style(self, business_intel: Dict) -> str:
+        """Infer service style from business intelligence"""
+        price_range = business_intel.get('price_range', '')
+        complexity = business_intel.get('menu_complexity', '')
+        
+        if price_range == 'luxury' or complexity == 'very_complex':
+            return 'fine_dining'
+        elif price_range == 'budget' or complexity == 'simple':
+            return 'quick_service'
+        else:
+            return 'casual_dining'
     
     def _safe_numeric(self, value) -> float:
         """Safely convert value to numeric"""
