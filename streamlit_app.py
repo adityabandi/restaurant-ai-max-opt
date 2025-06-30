@@ -30,175 +30,344 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Clean, modern flat design
+# 🎨 World-Class UI/UX Design - Mobile First, Beautiful, Intuitive
 st.markdown("""
 <style>
-    /* Global Styles - Clean & Flat */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    /* === GLOBAL FOUNDATION === */
     .stApp {
         background-color: #ffffff;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        color: #111827;
+        line-height: 1.6;
     }
     
-    /* Hide Streamlit branding */
+    /* Hide Streamlit Clutter */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .stDeployButton {display: none;}
     
-    /* Main header - Simple & Clean */
+    /* === BEAUTIFUL HEADERS === */
     .main-header {
-        background-color: #0066cc;
-        padding: 2rem;
-        border-radius: 8px;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        padding: 3rem 2rem;
+        border-radius: 16px;
         color: white;
         text-align: center;
-        margin-bottom: 2rem;
-        border: 1px solid #e1e5e9;
+        margin-bottom: 3rem;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .main-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        pointer-events: none;
     }
     
     .main-header h1 {
-        font-size: 2.5rem;
-        font-weight: 600;
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        font-weight: 700;
         margin: 0;
         color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+        z-index: 1;
     }
     
     .main-header p {
-        font-size: 1.1rem;
-        margin: 0.5rem 0 0 0;
+        font-size: clamp(1rem, 2.5vw, 1.25rem);
+        margin: 1rem 0 0 0;
         color: white;
-        opacity: 0.9;
+        opacity: 0.95;
+        position: relative;
+        z-index: 1;
+        font-weight: 400;
     }
     
-    /* Cards - Flat Design */
+    /* === STUNNING CARDS === */
     .metric-card {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 8px;
+        background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+        padding: 2rem;
+        border-radius: 12px;
         text-align: center;
-        border: 1px solid #e1e5e9;
+        border: 1px solid #e5e7eb;
         margin: 1rem 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border-color: #d1d5db;
+    }
+    
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+    
+    .metric-card:hover::before {
+        transform: scaleX(1);
     }
     
     .insight-card {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-        border: 1px solid #e1e5e9;
-        border-left: 4px solid #0066cc;
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin: 1.5rem 0;
+        border: 1px solid #e5e7eb;
+        border-left: 4px solid #2563eb;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
-    .priority-high { border-left-color: #ef4444 !important; }
-    .priority-medium { border-left-color: #f59e0b !important; }
-    .priority-low { border-left-color: #10b981 !important; }
+    .insight-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-left-width: 6px;
+    }
+    
+    .priority-high { 
+        border-left-color: #dc2626 !important; 
+        background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+    }
+    .priority-medium { 
+        border-left-color: #ea580c !important; 
+        background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+    }
+    .priority-low { 
+        border-left-color: #059669 !important; 
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    }
     
     .savings-highlight {
-        background-color: #0066cc;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
-        padding: 1rem;
-        border-radius: 8px;
+        padding: 2rem;
+        border-radius: 12px;
         text-align: center;
-        margin: 1rem 0;
-        font-weight: 500;
+        margin: 2rem 0;
+        font-weight: 600;
+        font-size: 1.1rem;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
-    /* Status indicator - Clean */
+    /* === STATUS INDICATOR === */
     .api-status {
         position: fixed;
-        top: 15px;
-        right: 15px;
+        top: 20px;
+        right: 20px;
         z-index: 999;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        font-size: 0.9rem;
-        font-weight: 500;
-        border: 1px solid #e1e5e9;
+        padding: 0.75rem 1.25rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
     
     .api-active {
-        background-color: #10b981;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
         color: white;
-        border-color: #10b981;
+        border-color: rgba(5, 150, 105, 0.3);
     }
     
     .api-fallback {
-        background-color: #f59e0b;
+        background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
         color: white;
-        border-color: #f59e0b;
+        border-color: rgba(234, 88, 12, 0.3);
     }
     
-    /* Upload zone - Simple */
+    /* === UPLOAD ZONE MAGIC === */
     .upload-zone {
-        border: 2px dashed #0066cc;
-        border-radius: 8px;
-        padding: 3rem;
+        border: 2px dashed #2563eb;
+        border-radius: 16px;
+        padding: 4rem 2rem;
         text-align: center;
-        background-color: #f8f9fa;
+        background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
         margin: 2rem 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
     }
     
-    /* Buttons - Flat & Clean */
+    .upload-zone:hover {
+        border-color: #1d4ed8;
+        background: linear-gradient(135deg, #dbeafe 0%, #f1f5f9 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.1);
+    }
+    
+    .upload-zone h3 {
+        color: #1e40af;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .upload-zone p {
+        color: #64748b;
+        margin: 0.5rem 0;
+    }
+    
+    /* === BUTTON PERFECTION === */
     .stButton > button {
-        background-color: #0066cc;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
         border: none;
-        border-radius: 6px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 500;
+        border-radius: 8px;
+        padding: 0.875rem 2rem;
+        font-weight: 600;
         font-size: 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        cursor: pointer;
     }
     
     .stButton > button:hover {
-        background-color: #0052a3;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
     }
     
-    /* Forms - Clean */
+    .stButton > button:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    
+    /* === FORMS THAT DON'T SUCK === */
     .stTextInput > div > div > input {
-        border-radius: 6px;
-        border: 1px solid #e1e5e9;
-        padding: 0.75rem;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        padding: 0.875rem 1rem;
         font-size: 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: white;
+        color: #111827;
     }
     
     .stTextInput > div > div > input:focus {
-        border-color: #0066cc;
+        border-color: #2563eb;
         outline: none;
-        box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        background-color: #ffffff;
     }
     
-    /* Tabs - Clean */
+    .stTextInput > div > div > input::placeholder {
+        color: #9ca3af;
+    }
+    
+    /* === BEAUTIFUL TABS === */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0;
+        background-color: #f9fafb;
+        border-radius: 8px;
+        padding: 0.25rem;
+        border: 1px solid #e5e7eb;
     }
     
     .stTabs [data-baseweb="tab"] {
-        background-color: #f8f9fa;
-        border: 1px solid #e1e5e9;
-        color: #2d3748;
-        padding: 0.5rem 1rem;
+        background-color: transparent;
+        border: none;
+        color: #6b7280;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
     }
     
     .stTabs [aria-selected="true"] {
         background-color: white;
-        border-bottom-color: white;
-        color: #0066cc;
+        color: #2563eb;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        font-weight: 600;
     }
     
-    /* File uploader */
-    .stFileUploader > div > div {
-        background-color: white;
-        border: 1px solid #e1e5e9;
-        border-radius: 6px;
-        padding: 1rem;
+    /* === MOBILE RESPONSIVE === */
+    @media (max-width: 768px) {
+        .main-header {
+            padding: 2rem 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            padding: 1.5rem;
+            margin: 0.5rem 0;
+        }
+        
+        .insight-card {
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .upload-zone {
+            padding: 2rem 1rem;
+        }
+        
+        .api-status {
+            top: 10px;
+            right: 10px;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+        }
     }
     
-    /* Metrics */
-    .stMetric {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 6px;
-        border: 1px solid #e1e5e9;
+    /* === TYPOGRAPHY SCALE === */
+    h1 { color: #111827; font-weight: 700; }
+    h2 { color: #111827; font-weight: 600; }
+    h3 { color: #111827; font-weight: 600; }
+    h4 { color: #111827; font-weight: 600; }
+    p { color: #374151; line-height: 1.6; }
+    
+    /* === LOADING STATES === */
+    .stSpinner > div {
+        border-top-color: #2563eb !important;
+    }
+    
+    /* === SUCCESS STATES === */
+    .stSuccess {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        border-radius: 8px;
+    }
+    
+    /* === ERROR STATES === */
+    .stError {
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        border-radius: 8px;
+    }
+    
+    /* === INFO STATES === */
+    .stInfo {
+        background-color: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1d4ed8;
+        border-radius: 8px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -422,12 +591,17 @@ class RestaurantAnalyticsApp:
         """Show main application"""
         user = st.session_state.user
         
-        # Clean header
+        # Beautiful dashboard header
         st.markdown(f"""
-        <div style="background-color: #0066cc; padding: 1.5rem; border-radius: 8px; 
-                    margin-bottom: 2rem; border: 1px solid #e1e5e9;">
-            <h2 style="margin: 0; color: white; font-weight: 600;">🍽️ {user['restaurant_name'] or 'Restaurant'} Analytics</h2>
-            <p style="margin: 0.5rem 0 0 0; color: white; opacity: 0.9;">Welcome back, {user['name']}!</p>
+        <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
+                    padding: 2rem; border-radius: 16px; margin-bottom: 3rem;
+                    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    position: relative; overflow: hidden;">
+            <div style="position: relative; z-index: 1;">
+                <h2 style="margin: 0; color: white; font-weight: 700; font-size: 2rem;">🍽️ {user['restaurant_name'] or 'Restaurant'} Analytics</h2>
+                <p style="margin: 0.75rem 0 0 0; color: white; opacity: 0.95; font-size: 1.1rem;">Welcome back, {user['name']}! Ready to save money?</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -448,13 +622,24 @@ class RestaurantAnalyticsApp:
     
     def _show_upload_section(self):
         """Show modern file upload section"""
-        # Clean hero section
+        # Stunning hero section
         st.markdown("""
-        <div style="text-align: center; padding: 2rem 0;">
-            <h2 style="color: #2d3748; font-weight: 600;">📊 Upload Your Restaurant Data</h2>
-            <p style="font-size: 1.1rem; color: #6b7280; margin-bottom: 2rem;">
-                Get instant insights that save $1,200+ monthly
+        <div style="text-align: center; padding: 3rem 1rem; 
+                    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+                    border-radius: 20px; margin-bottom: 3rem;
+                    border: 1px solid #e2e8f0;">
+            <h1 style="color: #111827; font-weight: 700; font-size: clamp(2rem, 4vw, 3rem); margin: 0;">
+                📊 Upload Your Restaurant Data
+            </h1>
+            <p style="font-size: clamp(1.1rem, 2vw, 1.3rem); color: #6b7280; margin: 1rem 0 0 0; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                Get instant insights that save <strong style="color: #059669;">$1,200+ monthly</strong> — AI analyzes any format from any POS system
             </p>
+            <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+                <div style="color: #059669; font-weight: 600;">✅ Toast</div>
+                <div style="color: #059669; font-weight: 600;">✅ Square</div>
+                <div style="color: #059669; font-weight: 600;">✅ Clover</div>
+                <div style="color: #059669; font-weight: 600;">✅ Any Excel/CSV</div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -481,21 +666,35 @@ class RestaurantAnalyticsApp:
                 self._process_uploaded_file(uploaded_file)
         
         with col2:
-            st.markdown("### 🚀 Try Demo Data")
-            st.markdown("See the platform in action with realistic restaurant data")
+            # Demo section with beautiful styling
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%); 
+                        padding: 2rem; border-radius: 16px; border: 1px solid #bfdbfe;
+                        text-align: center; margin-bottom: 2rem;">
+                <h3 style="color: #1e40af; margin: 0 0 1rem 0; font-weight: 600;">🚀 Try Demo Data</h3>
+                <p style="color: #64748b; margin-bottom: 1.5rem; line-height: 1.6;">
+                    See the platform in action with realistic restaurant data from a premium establishment
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
             
-            if st.button("🎭 Load Demo Restaurant", use_container_width=True):
+            if st.button("🎭 Load Premium Demo Restaurant", use_container_width=True):
                 self._load_demo_data()
             
-            st.markdown("---")
-            st.markdown("### 💡 What You'll See:")
+            # Benefits section
             st.markdown("""
-            - **💰 Cost savings** with exact dollar amounts
-            - **📈 Menu performance** rankings  
-            - **🌤️ Weather impact** predictions
-            - **🎯 Actionable recommendations** to boost profit
-            - **📊 Interactive charts** and insights
-            """)
+            <div style="margin-top: 2rem; padding: 1.5rem; background: white; 
+                        border-radius: 12px; border: 1px solid #e5e7eb;">
+                <h4 style="color: #111827; margin: 0 0 1rem 0; font-weight: 600;">💡 What You'll Discover:</h4>
+                <div style="space-y: 0.75rem;">
+                    <div style="margin: 0.75rem 0; color: #374151;">💰 <strong>Exact savings</strong> — "$847/month from removing Caesar Salad"</div>
+                    <div style="margin: 0.75rem 0; color: #374151;">📈 <strong>Menu rankings</strong> — Which items make you the most money</div>
+                    <div style="margin: 0.75rem 0; color: #374151;">🌤️ <strong>Weather predictions</strong> — "Rain = +60% delivery orders"</div>
+                    <div style="margin: 0.75rem 0; color: #374151;">🎯 <strong>Action items</strong> — Step-by-step profit improvements</div>
+                    <div style="margin: 0.75rem 0; color: #374151;">📊 <strong>Beautiful charts</strong> — Interactive data visualization</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
     
     def _process_uploaded_file(self, uploaded_file):
         """Process uploaded file with AI parsing"""
@@ -621,16 +820,18 @@ class RestaurantAnalyticsApp:
         with col1:
             st.markdown(f"""
             <div class="metric-card">
-                <h2 style="color: #10b981; margin: 0; font-weight: 600;">${total_savings:,.0f}</h2>
-                <p style="margin: 0; color: #6b7280;">Monthly Savings</p>
+                <h2 style="color: #059669; margin: 0; font-weight: 700; font-size: 2.5rem;">${total_savings:,.0f}</h2>
+                <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-weight: 500;">Monthly Savings</p>
+                <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #059669;">💰 Real money in your pocket</div>
             </div>
             """, unsafe_allow_html=True)
         
         with col2:
             st.markdown(f"""
             <div class="metric-card">
-                <h2 style="color: #0066cc; margin: 0; font-weight: 600;">{len(insights)}</h2>
-                <p style="margin: 0; color: #6b7280;">AI Insights</p>
+                <h2 style="color: #2563eb; margin: 0; font-weight: 700; font-size: 2.5rem;">{len(insights)}</h2>
+                <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-weight: 500;">AI Insights</p>
+                <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #2563eb;">🤖 Actionable recommendations</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -638,16 +839,18 @@ class RestaurantAnalyticsApp:
             efficiency_score = min(85 + len(insights) * 2, 95)
             st.markdown(f"""
             <div class="metric-card">
-                <h2 style="color: #f59e0b; margin: 0; font-weight: 600;">{efficiency_score}%</h2>
-                <p style="margin: 0; color: #6b7280;">Efficiency Score</p>
+                <h2 style="color: #ea580c; margin: 0; font-weight: 700; font-size: 2.5rem;">{efficiency_score}%</h2>
+                <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-weight: 500;">Efficiency Score</p>
+                <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #ea580c;">📈 Above industry average</div>
             </div>
             """, unsafe_allow_html=True)
         
         with col4:
             st.markdown(f"""
             <div class="metric-card">
-                <h2 style="color: #0066cc; margin: 0; font-weight: 600;">${total_savings * 12:,.0f}</h2>
-                <p style="margin: 0; color: #6b7280;">Annual Impact</p>
+                <h2 style="color: #7c3aed; margin: 0; font-weight: 700; font-size: 2.5rem;">${total_savings * 12:,.0f}</h2>
+                <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-weight: 500;">Annual Impact</p>
+                <div style="margin-top: 0.5rem; font-size: 0.875rem; color: #7c3aed;">🎯 Yearly profit increase</div>
             </div>
             """, unsafe_allow_html=True)
         
