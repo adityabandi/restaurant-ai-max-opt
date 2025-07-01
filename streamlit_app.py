@@ -81,11 +81,12 @@ st.markdown("""
         text-align: center;
         border: 1px solid #e5e7eb;
         margin-bottom: 1.5rem;
-        transition: border-color 0.2s ease;
+        transition: all 0.2s ease;
     }
     
     .metric-card:hover {
-        border-color: #d1d5db;
+        border-color: #2563eb;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
     .insight-card {
@@ -95,6 +96,47 @@ st.markdown("""
         margin-bottom: 1.5rem;
         border: 1px solid #e5e7eb;
         border-left: 3px solid #2563eb;
+    }
+    
+    /* === QUERY INTERFACE === */
+    .query-card {
+        background: #ffffff;
+        padding: 2rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+    
+    .query-response {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 6px;
+        border-left: 3px solid #2563eb;
+        margin: 1rem 0;
+    }
+    
+    .suggestion-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+    
+    .suggestion-pill {
+        background: #f1f5f9;
+        color: #374151;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+    
+    .suggestion-pill:hover {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
     }
     
     .priority-high { 
@@ -678,7 +720,7 @@ class RestaurantAnalyticsApp:
             st.rerun()
         
         # Tabs for different views
-        tabs = ["💰 Revenue Insights", "📊 Data Overview", "🌤️ Weather Intelligence"]
+        tabs = ["💰 Revenue Insights", "📊 Data Overview", "❓ Ask Questions", "🌤️ Weather Intelligence"]
         
         # Add Cross-Dataset Analysis tab if multiple data types detected
         if hasattr(st.session_state, 'cross_file_analysis') and st.session_state.cross_file_analysis:
@@ -693,12 +735,15 @@ class RestaurantAnalyticsApp:
         with selected_tabs[1]:  # Data Overview
             self._show_data_overview(data.get('processed_data', []))
         
-        with selected_tabs[2]:  # Weather Intelligence
+        with selected_tabs[2]:  # Ask Questions
+            self._show_query_interface(data)
+        
+        with selected_tabs[3]:  # Weather Intelligence
             self._show_weather_insights(insights)
         
         # Show cross-dataset analysis if available
-        if len(tabs) > 3:
-            with selected_tabs[3]:  # Cross-Dataset Analysis
+        if len(tabs) > 4:
+            with selected_tabs[4]:  # Cross-Dataset Analysis
                 self._show_cross_dataset_analysis(data, insights)
     
     def _show_revenue_insights(self, insights):
@@ -799,6 +844,307 @@ class RestaurantAnalyticsApp:
         # Data table
         st.markdown("### Data Details")
         st.dataframe(df, use_container_width=True)
+    
+    def _show_query_interface(self, data):
+        """Show natural language query interface"""
+        st.markdown("""
+        <div class="query-card">
+            <h3 style="margin: 0 0 1rem 0; color: #374151;">Ask Questions About Your Data</h3>
+            <p style="margin: 0 0 1.5rem 0; color: #6b7280;">Get instant answers about your restaurant performance using natural language.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Initialize query history
+        if 'query_history' not in st.session_state:
+            st.session_state.query_history = []
+        
+        # Suggested questions
+        st.markdown("**Try these questions:**")
+        suggestions = [
+            "What are my best selling items?",
+            "Which items have the highest profit margins?",
+            "What time of day is busiest?",
+            "How do weekends compare to weekdays?",
+            "What items should I promote more?",
+            "Are there any underperforming menu items?"
+        ]
+        
+        # Display suggestion pills
+        cols = st.columns(3)
+        for i, suggestion in enumerate(suggestions):
+            with cols[i % 3]:
+                if st.button(suggestion, key=f"suggestion_{i}", use_container_width=True):
+                    st.session_state.current_query = suggestion
+        
+        # Query input
+        query = st.text_area(
+            "Ask your question:",
+            value=st.session_state.get('current_query', ''),
+            placeholder="Example: What are my top 5 menu items by revenue this month?",
+            height=100,
+            key="query_input"
+        )
+        
+        # Process query
+        if st.button("Get Answer", type="primary", use_container_width=True):
+            if query.strip():
+                with st.spinner("Analyzing your data..."):
+                    response = self._process_natural_language_query(query, data)
+                    
+                    # Add to history
+                    st.session_state.query_history.insert(0, {
+                        'question': query,
+                        'answer': response,
+                        'timestamp': datetime.now().strftime('%H:%M')
+                    })
+                    
+                    # Clear current query
+                    if 'current_query' in st.session_state:
+                        del st.session_state.current_query
+        
+        # Show query history
+        if st.session_state.query_history:
+            st.markdown("### Recent Questions")
+            for i, item in enumerate(st.session_state.query_history[:5]):  # Show last 5
+                with st.expander(f"🕐 {item['timestamp']} - {item['question']}", expanded=i==0):
+                    st.markdown(f"""
+                    <div class="query-response">
+                        {item['answer']}
+                    </div>
+                    """, unsafe_allow_html=True)
+    
+    def _process_natural_language_query(self, query: str, data: Dict) -> str:
+        """Process natural language queries with cost-effective AI usage"""
+        processed_data = data.get('processed_data', [])
+        
+        if not processed_data:
+            return "❌ No data available to analyze. Please upload your restaurant data first."
+        
+        # Convert to DataFrame for analysis
+        df = pd.DataFrame(processed_data)
+        
+        # Step 1: Try simple pattern matching first (free & fast)
+        simple_answer = self._try_simple_query_patterns(query.lower(), df)
+        if simple_answer:
+            return simple_answer
+        
+        # Step 2: Use AI for complex queries (only when needed)
+        return self._use_ai_for_complex_query(query, df)
+    
+    def _try_simple_query_patterns(self, query: str, df: pd.DataFrame) -> Optional[str]:
+        """Try to answer simple queries without AI"""
+        
+        # Best selling items
+        if any(phrase in query for phrase in ['best selling', 'top selling', 'most popular']):
+            return self._get_top_items_by_quantity(df)
+        
+        # Highest revenue items
+        if any(phrase in query for phrase in ['highest revenue', 'most revenue', 'top revenue']):
+            return self._get_top_items_by_revenue(df)
+        
+        # Profit margin analysis
+        if any(phrase in query for phrase in ['profit margin', 'most profitable', 'highest margin']):
+            return self._get_profit_margin_analysis(df)
+        
+        # Time-based analysis
+        if any(phrase in query for phrase in ['busiest time', 'peak hours', 'what time']):
+            return self._get_time_analysis(df)
+        
+        # Underperforming items
+        if any(phrase in query for phrase in ['underperforming', 'worst selling', 'slow moving']):
+            return self._get_underperforming_items(df)
+        
+        # Weekend vs weekday
+        if any(phrase in query for phrase in ['weekend', 'weekday', 'compare days']):
+            return self._get_weekend_analysis(df)
+        
+        return None  # No simple pattern matched
+    
+    def _get_top_items_by_quantity(self, df: pd.DataFrame) -> str:
+        """Get top selling items by quantity"""
+        if 'item_name' not in df.columns or 'quantity' not in df.columns:
+            return "❌ Need item names and quantities to analyze best sellers."
+        
+        top_items = df.groupby('item_name')['quantity'].sum().sort_values(ascending=False).head(5)
+        
+        result = "🔥 **Top 5 Best Selling Items:**\n\n"
+        for i, (item, qty) in enumerate(top_items.items(), 1):
+            result += f"{i}. **{item}** - {qty:.0f} units sold\n"
+        
+        return result
+    
+    def _get_top_items_by_revenue(self, df: pd.DataFrame) -> str:
+        """Get top items by revenue"""
+        if 'item_name' not in df.columns or 'total_amount' not in df.columns:
+            return "❌ Need item names and revenue data to analyze top earners."
+        
+        top_revenue = df.groupby('item_name')['total_amount'].sum().sort_values(ascending=False).head(5)
+        
+        result = "💰 **Top 5 Revenue Generating Items:**\n\n"
+        for i, (item, revenue) in enumerate(top_revenue.items(), 1):
+            result += f"{i}. **{item}** - ${revenue:.2f}\n"
+        
+        return result
+    
+    def _get_profit_margin_analysis(self, df: pd.DataFrame) -> str:
+        """Analyze profit margins"""
+        if not all(col in df.columns for col in ['item_name', 'total_amount']):
+            return "❌ Need item names and revenue data for profit analysis."
+        
+        # Calculate margins if cost data available
+        if 'cost' in df.columns:
+            df['margin'] = df['total_amount'] - df['cost']
+            df['margin_percent'] = (df['margin'] / df['total_amount'] * 100).round(1)
+            
+            top_margins = df.groupby('item_name').agg({
+                'margin': 'sum',
+                'margin_percent': 'mean'
+            }).sort_values('margin', ascending=False).head(5)
+            
+            result = "📊 **Highest Profit Margin Items:**\n\n"
+            for i, (item, data) in enumerate(top_margins.iterrows(), 1):
+                result += f"{i}. **{item}** - ${data['margin']:.2f} ({data['margin_percent']:.1f}% margin)\n"
+        else:
+            # Estimate based on revenue (assuming 30% food cost)
+            top_revenue = df.groupby('item_name')['total_amount'].sum().sort_values(ascending=False).head(5)
+            
+            result = "📊 **Estimated Profit Leaders** (assuming 30% food cost):\n\n"
+            for i, (item, revenue) in enumerate(top_revenue.items(), 1):
+                estimated_profit = revenue * 0.7
+                result += f"{i}. **{item}** - ${estimated_profit:.2f} estimated profit\n"
+        
+        return result
+    
+    def _get_time_analysis(self, df: pd.DataFrame) -> str:
+        """Analyze time-based patterns"""
+        if 'hour_of_day' in df.columns:
+            hourly_sales = df.groupby('hour_of_day')['total_amount'].sum()
+            peak_hour = hourly_sales.idxmax()
+            peak_amount = hourly_sales.max()
+            
+            result = f"⏰ **Peak Hours Analysis:**\n\n"
+            result += f"🔥 Busiest hour: **{peak_hour}:00** (${peak_amount:.2f} in sales)\n\n"
+            result += "**Top 3 busiest hours:**\n"
+            
+            for i, (hour, amount) in enumerate(hourly_sales.sort_values(ascending=False).head(3).items(), 1):
+                result += f"{i}. {hour}:00 - ${amount:.2f}\n"
+        else:
+            result = "❌ Need time data to analyze peak hours. Consider including time columns in your data."
+        
+        return result
+    
+    def _get_underperforming_items(self, df: pd.DataFrame) -> str:
+        """Find underperforming items"""
+        if 'item_name' not in df.columns or 'quantity' not in df.columns:
+            return "❌ Need item names and quantities to find underperforming items."
+        
+        item_performance = df.groupby('item_name').agg({
+            'quantity': 'sum',
+            'total_amount': 'sum'
+        }).sort_values('quantity')
+        
+        bottom_items = item_performance.head(5)
+        
+        result = "📉 **Underperforming Items** (lowest sales volume):\n\n"
+        for i, (item, data) in enumerate(bottom_items.iterrows(), 1):
+            result += f"{i}. **{item}** - {data['quantity']:.0f} units, ${data['total_amount']:.2f} revenue\n"
+        
+        result += "\n💡 **Suggestions:** Consider promoting these items or removing them from the menu."
+        
+        return result
+    
+    def _get_weekend_analysis(self, df: pd.DataFrame) -> str:
+        """Compare weekend vs weekday performance"""
+        if 'is_weekend' not in df.columns:
+            return "❌ Need date information to compare weekends vs weekdays."
+        
+        comparison = df.groupby('is_weekend').agg({
+            'total_amount': ['sum', 'mean'],
+            'quantity': 'sum'
+        }).round(2)
+        
+        weekend_revenue = comparison.loc[True, ('total_amount', 'sum')] if True in comparison.index else 0
+        weekday_revenue = comparison.loc[False, ('total_amount', 'sum')] if False in comparison.index else 0
+        
+        result = "📅 **Weekend vs Weekday Analysis:**\n\n"
+        result += f"🌴 **Weekend Total:** ${weekend_revenue:.2f}\n"
+        result += f"🏢 **Weekday Total:** ${weekday_revenue:.2f}\n\n"
+        
+        if weekend_revenue > weekday_revenue:
+            result += "🎯 **Insight:** Weekends are stronger - consider weekend-specific promotions!"
+        else:
+            result += "🎯 **Insight:** Weekdays are stronger - focus on maintaining business lunch traffic!"
+        
+        return result
+    
+    def _use_ai_for_complex_query(self, query: str, df: pd.DataFrame) -> str:
+        """Use AI for complex queries that pattern matching can't handle"""
+        
+        # Check if AI is available
+        parser = AIExcelParser()
+        if not parser.anthropic_client:
+            return "❌ AI analysis not available. Try simpler questions like 'What are my best selling items?' or 'Which items have the highest revenue?'"
+        
+        # Prepare data summary for AI
+        data_summary = self._prepare_data_summary_for_ai(df)
+        
+        prompt = f"""
+        You are a restaurant business analyst. Answer this question about the restaurant's performance data:
+        
+        Question: {query}
+        
+        Data Summary:
+        {data_summary}
+        
+        Provide a helpful, actionable answer that:
+        1. Directly answers the question
+        2. Includes specific numbers and insights
+        3. Gives practical recommendations
+        4. Uses a friendly, professional tone
+        5. Formats the response with markdown for readability
+        
+        Keep the response concise but informative (max 300 words).
+        """
+        
+        try:
+            message = parser.anthropic_client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=400,
+                temperature=0.1,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            return message.content[0].text
+            
+        except Exception as e:
+            return f"❌ Unable to process complex query: {str(e)}\n\nTry simpler questions like:\n• What are my best selling items?\n• Which items make the most revenue?\n• What time of day is busiest?"
+    
+    def _prepare_data_summary_for_ai(self, df: pd.DataFrame) -> str:
+        """Prepare a concise data summary for AI analysis"""
+        summary = f"Dataset: {len(df)} records\n"
+        summary += f"Columns: {', '.join(df.columns)}\n\n"
+        
+        # Top items by quantity
+        if 'item_name' in df.columns and 'quantity' in df.columns:
+            top_items = df.groupby('item_name')['quantity'].sum().sort_values(ascending=False).head(3)
+            summary += "Top 3 items by quantity:\n"
+            for item, qty in top_items.items():
+                summary += f"- {item}: {qty} units\n"
+            summary += "\n"
+        
+        # Revenue summary
+        if 'total_amount' in df.columns:
+            total_revenue = df['total_amount'].sum()
+            avg_transaction = df['total_amount'].mean()
+            summary += f"Total Revenue: ${total_revenue:.2f}\n"
+            summary += f"Average Transaction: ${avg_transaction:.2f}\n\n"
+        
+        # Time patterns if available
+        if 'hour_of_day' in df.columns:
+            peak_hour = df.groupby('hour_of_day')['total_amount'].sum().idxmax()
+            summary += f"Peak hour: {peak_hour}:00\n"
+        
+        return summary
     
     def _show_weather_insights(self, insights):
         """Show weather-related insights"""

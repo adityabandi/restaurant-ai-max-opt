@@ -181,14 +181,24 @@ class AIExcelParser:
         return df
     
     def _analyze_with_ai(self, df: pd.DataFrame, filename: str) -> Dict:
-        """Use AI to understand the data structure and type"""
-        # Prepare sample data for AI analysis
-        sample_data = self._prepare_sample_for_ai(df)
+        """Smart analysis - try patterns first, AI fallback only when needed"""
+        # Step 1: Try smart pattern detection first (fast & free)
+        pattern_analysis = self._smart_pattern_detection(df, filename)
         
+        # Step 2: Only use AI if pattern detection has low confidence
+        if pattern_analysis['confidence'] >= 0.85:
+            return pattern_analysis
+        
+        # Step 3: Use AI for complex cases (only when needed)
         if self.anthropic_client:
-            return self._claude_analysis(sample_data, filename)
+            # Prepare sample data for AI analysis
+            sample_data = self._prepare_sample_for_ai(df)
+            ai_analysis = self._claude_analysis(sample_data, filename)
+            
+            # Combine AI insights with pattern detection
+            return self._merge_analysis(pattern_analysis, ai_analysis)
         else:
-            return self._fallback_analysis(df, filename)
+            return pattern_analysis
     
     def _prepare_sample_for_ai(self, df: pd.DataFrame) -> str:
         """Prepare sample data for AI analysis"""
@@ -214,6 +224,246 @@ class AIExcelParser:
             sample_info['sample_data'].append(row_data)
         
         return json.dumps(sample_info, indent=2)
+    
+    def _smart_pattern_detection(self, df: pd.DataFrame, filename: str) -> Dict:
+        """Advanced pattern detection for common restaurant POS systems"""
+        columns = [col.lower() for col in df.columns]
+        filename_lower = filename.lower()
+        
+        # POS System Detection Patterns
+        pos_patterns = {
+            'square': ['gross sales', 'net sales', 'tax', 'tip', 'fees', 'item name'],
+            'toast': ['item name', 'quantity', 'gross', 'discount', 'net'],
+            'clover': ['name', 'price', 'quantity', 'amount', 'tax'],
+            'resy': ['party size', 'date', 'time', 'covers', 'guest'],
+            'opentable': ['reservation', 'covers', 'date', 'time', 'party'],
+            'doordash': ['delivery', 'order', 'subtotal', 'delivery fee'],
+            'ubereats': ['order', 'delivery', 'pickup', 'subtotal', 'fees']
+        }
+        
+        # Detect POS system
+        pos_system = 'unknown'
+        pos_confidence = 0.0
+        
+        for system, patterns in pos_patterns.items():
+            matches = sum(1 for pattern in patterns if any(pattern in col for col in columns))
+            confidence = matches / len(patterns)
+            if confidence > pos_confidence:
+                pos_confidence = confidence
+                pos_system = system
+        
+        # Data Type Detection with enhanced patterns
+        data_type_patterns = {
+            'sales': {
+                'required': ['item', 'quantity', 'price'],
+                'optional': ['total', 'amount', 'revenue', 'date', 'time'],
+                'filename_keywords': ['sales', 'pos', 'transaction', 'revenue']
+            },
+            'inventory': {
+                'required': ['item', 'stock'],
+                'optional': ['count', 'on hand', 'available', 'quantity'],
+                'filename_keywords': ['inventory', 'stock', 'count']
+            },
+            'supplier': {
+                'required': ['supplier', 'cost'],
+                'optional': ['vendor', 'invoice', 'purchase', 'delivery'],
+                'filename_keywords': ['supplier', 'vendor', 'invoice', 'purchase']
+            }
+        }
+        
+        best_data_type = 'other'
+        best_confidence = 0.0
+        
+        for data_type, patterns in data_type_patterns.items():
+            # Check required fields
+            required_matches = sum(1 for req in patterns['required'] 
+                                 if any(req in col for col in columns))
+            required_score = required_matches / len(patterns['required']) if patterns['required'] else 0
+            
+            # Check optional fields
+            optional_matches = sum(1 for opt in patterns['optional'] 
+                                 if any(opt in col for col in columns))
+            optional_score = optional_matches / len(patterns['optional']) if patterns['optional'] else 0
+            
+            # Check filename
+            filename_score = sum(1 for keyword in patterns['filename_keywords'] 
+                               if keyword in filename_lower)
+            filename_boost = min(filename_score * 0.2, 0.3)
+            
+            # Combined confidence
+            confidence = (required_score * 0.6) + (optional_score * 0.3) + filename_boost
+            
+            if confidence > best_confidence:
+                best_confidence = confidence
+                best_data_type = data_type
+        
+        # Enhanced column mapping
+        column_mapping = self._create_smart_column_mapping(df.columns, best_data_type, pos_system)
+        
+        # Calculate overall confidence
+        overall_confidence = min((best_confidence + pos_confidence) / 2, 0.95)
+        
+        return {
+            'data_type': best_data_type,
+            'pos_system': pos_system,
+            'confidence': overall_confidence,
+            'column_mapping': column_mapping,
+            'standard_field_mapping': self._create_standard_mapping(column_mapping, df.columns),
+            'business_intelligence': self._infer_business_intelligence(df, best_data_type, pos_system),
+            'suggestions': self._generate_pattern_suggestions(best_data_type, pos_system, overall_confidence),
+            'reasoning': f"Pattern detection: {best_data_type} from {pos_system} (confidence: {overall_confidence:.2f})"
+        }
+    
+    def _create_smart_column_mapping(self, columns: List[str], data_type: str, pos_system: str) -> Dict:
+        """Create intelligent column mapping based on data type and POS system"""
+        mapping = {}
+        
+        # POS-specific mappings
+        pos_mappings = {
+            'square': {
+                'gross sales': 'total_amount',
+                'item name': 'item_name',
+                'quantity': 'quantity',
+                'tax': 'tax_amount',
+                'tip': 'tip_amount'
+            },
+            'toast': {
+                'item name': 'item_name',
+                'quantity': 'quantity',
+                'gross': 'total_amount',
+                'net': 'net_amount'
+            },
+            'clover': {
+                'name': 'item_name',
+                'price': 'unit_price',
+                'quantity': 'quantity',
+                'amount': 'total_amount'
+            }
+        }
+        
+        # Apply POS-specific mapping first
+        if pos_system in pos_mappings:
+            for col in columns:
+                col_lower = col.lower()
+                for pattern, field in pos_mappings[pos_system].items():
+                    if pattern in col_lower:
+                        mapping[col] = field
+                        break
+        
+        # Fill in remaining with generic patterns
+        for col in columns:
+            if col in mapping:
+                continue
+                
+            col_lower = col.lower()
+            
+            # Generic patterns
+            if any(word in col_lower for word in ['item', 'product', 'dish', 'menu']):
+                mapping[col] = 'item_name'
+            elif any(word in col_lower for word in ['qty', 'quantity', 'count']) and 'discount' not in col_lower:
+                mapping[col] = 'quantity'
+            elif any(word in col_lower for word in ['price', 'unit price']) and 'total' not in col_lower:
+                mapping[col] = 'unit_price'
+            elif any(word in col_lower for word in ['total', 'amount', 'revenue']) and 'tax' not in col_lower:
+                mapping[col] = 'total_amount'
+            elif any(word in col_lower for word in ['date']):
+                mapping[col] = 'date'
+            elif any(word in col_lower for word in ['time']):
+                mapping[col] = 'time'
+            elif any(word in col_lower for word in ['category', 'type', 'class']):
+                mapping[col] = 'category'
+            elif any(word in col_lower for word in ['cost', 'cogs']):
+                mapping[col] = 'cost'
+        
+        return mapping
+    
+    def _create_standard_mapping(self, column_mapping: Dict, columns: List[str]) -> Dict:
+        """Create standard field mapping"""
+        standard_fields = {}
+        
+        # Reverse mapping to get column names for standard fields
+        for col, field in column_mapping.items():
+            if field not in standard_fields:  # Use first match
+                standard_fields[field] = col
+        
+        return standard_fields
+    
+    def _infer_business_intelligence(self, df: pd.DataFrame, data_type: str, pos_system: str) -> Dict:
+        """Infer business intelligence from data patterns"""
+        intel = {}
+        
+        # Analyze price ranges if we have pricing data
+        price_cols = [col for col in df.columns if any(word in col.lower() for word in ['price', 'amount', 'total'])]
+        if price_cols:
+            try:
+                price_data = df[price_cols[0]].apply(self._safe_numeric)
+                price_data = price_data[price_data > 0]  # Remove zeros
+                
+                if len(price_data) > 0:
+                    avg_price = price_data.mean()
+                    if avg_price < 10:
+                        intel['price_range'] = 'budget'
+                    elif avg_price < 25:
+                        intel['price_range'] = 'mid_tier'
+                    elif avg_price < 50:
+                        intel['price_range'] = 'premium'
+                    else:
+                        intel['price_range'] = 'luxury'
+                    
+                    intel['avg_transaction_size'] = f"${avg_price:.2f}"
+            except:
+                pass
+        
+        # Analyze menu complexity
+        item_cols = [col for col in df.columns if any(word in col.lower() for word in ['item', 'product', 'dish'])]
+        if item_cols:
+            unique_items = df[item_cols[0]].nunique()
+            if unique_items < 20:
+                intel['menu_complexity'] = 'simple'
+            elif unique_items < 50:
+                intel['menu_complexity'] = 'moderate'
+            elif unique_items < 100:
+                intel['menu_complexity'] = 'complex'
+            else:
+                intel['menu_complexity'] = 'very_complex'
+        
+        return intel
+    
+    def _generate_pattern_suggestions(self, data_type: str, pos_system: str, confidence: float) -> List[str]:
+        """Generate helpful suggestions based on pattern detection"""
+        suggestions = []
+        
+        if confidence < 0.7:
+            suggestions.append("Consider adding clearer column headers for better auto-detection")
+        
+        if pos_system == 'unknown':
+            suggestions.append("For better insights, export from your POS with standard field names")
+        
+        if data_type == 'sales':
+            suggestions.append("Include date/time columns for trend analysis")
+            suggestions.append("Add category columns for menu performance insights")
+        
+        return suggestions
+    
+    def _merge_analysis(self, pattern_analysis: Dict, ai_analysis: Dict) -> Dict:
+        """Merge pattern detection with AI analysis for best results"""
+        # Use AI analysis as base, enhance with pattern detection insights
+        merged = ai_analysis.copy()
+        
+        # Keep higher confidence POS system detection
+        if pattern_analysis.get('confidence', 0) > 0.8:
+            merged['pos_system'] = pattern_analysis['pos_system']
+        
+        # Combine suggestions
+        pattern_suggestions = pattern_analysis.get('suggestions', [])
+        ai_suggestions = merged.get('suggestions', [])
+        merged['suggestions'] = list(set(pattern_suggestions + ai_suggestions))
+        
+        # Boost overall confidence if pattern detection was high
+        if pattern_analysis.get('confidence', 0) > 0.8:
+            merged['confidence'] = min(merged.get('confidence', 0.8) + 0.1, 0.95)
+        
+        return merged
     
     def _claude_analysis(self, sample_data: str, filename: str) -> Dict:
         """Use Claude to analyze the data structure with enhanced intelligence"""
