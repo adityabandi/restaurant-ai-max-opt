@@ -857,3 +857,318 @@ class RestaurantAnalyticsApp:
         status_placeholder.empty()
         st.session_state.show_upload = False
         st.rerun()
+    
+    def load_demo_data(self):
+        """Load sample restaurant data"""
+        # Sample sales data
+        sales_data = pd.DataFrame({
+            'item': ['Classic Burger', 'Caesar Salad', 'Margherita Pizza', 'Grilled Salmon', 'Chicken Wings'],
+            'quantity': [45, 12, 28, 22, 35],
+            'price': [16.99, 14.99, 18.99, 24.99, 12.99],
+            'total': [764.55, 179.88, 531.72, 549.78, 454.65],
+            'category': ['Entrees', 'Salads', 'Pizza', 'Entrees', 'Appetizers']
+        })
+        
+        # Sample inventory data  
+        inventory_data = pd.DataFrame({
+            'item': ['Classic Burger', 'Caesar Salad', 'Margherita Pizza', 'Grilled Salmon', 'Chicken Wings'],
+            'quantity': [53, 7, 42, 18, 105],
+            'cost': [5.75, 4.25, 6.50, 9.95, 4.80],
+            'category': ['Entrees', 'Salads', 'Pizza', 'Entrees', 'Appetizers']
+        })
+        
+        st.session_state.uploaded_files = {
+            'demo_sales.csv': {'data': sales_data, 'type': 'sales', 'rows': len(sales_data), 'columns': list(sales_data.columns)},
+            'demo_inventory.csv': {'data': inventory_data, 'type': 'inventory', 'rows': len(inventory_data), 'columns': list(inventory_data.columns)}
+        }
+        
+        self.generate_all_insights()
+        st.session_state.show_upload = False
+        st.success("🎉 Demo data loaded! Check out your insights.")
+        st.rerun()
+    
+    def generate_all_insights(self):
+        """Generate insights from all uploaded data"""
+        all_insights = []
+        sales_dfs = []
+        inventory_dfs = []
+        
+        # Separate data by type
+        for filename, file_data in st.session_state.uploaded_files.items():
+            df = file_data['data']
+            data_type = file_data['type']
+            
+            if data_type == 'sales':
+                all_insights.extend(self.insights_generator.analyze_sales_data(df))
+                sales_dfs.append(df)
+            elif data_type == 'inventory':
+                all_insights.extend(self.insights_generator.analyze_inventory_data(df))
+                inventory_dfs.append(df)
+        
+        # Cross-analysis if we have both types
+        if sales_dfs and inventory_dfs:
+            for sales_df in sales_dfs:
+                for inv_df in inventory_dfs:
+                    all_insights.extend(self.insights_generator.analyze_cross_data(sales_df, inv_df))
+        
+        st.session_state.insights = all_insights
+    
+    def show_dashboard(self):
+        """Main dashboard view"""
+        # Header with back button
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("← Upload New Data"):
+                st.session_state.show_upload = True
+                st.rerun()
+        
+        with col2:
+            st.markdown(f"""
+            <h2 style="margin: 0; color: #1a1f36;">
+                📊 Analyzing {len(st.session_state.uploaded_files)} files
+            </h2>
+            """, unsafe_allow_html=True)
+        
+        # File summary
+        total_rows = sum(f['rows'] for f in st.session_state.uploaded_files.values())
+        file_types = [f['type'] for f in st.session_state.uploaded_files.values()]
+        
+        st.markdown(f"""
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="metric-value">{len(st.session_state.uploaded_files)}</div>
+                <div class="metric-label">Files Processed</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{total_rows:,}</div>
+                <div class="metric-label">Total Records</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{len(set(file_types))}</div>
+                <div class="metric-label">Data Types</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{len(st.session_state.insights)}</div>
+                <div class="metric-label">Insights Generated</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Tabs for different views
+        tab1, tab2, tab3 = st.tabs(["💡 Insights", "📊 Data Overview", "❓ Ask Questions"])
+        
+        with tab1:
+            self.show_insights()
+        
+        with tab2:
+            self.show_data_overview()
+        
+        with tab3:
+            self.show_query_interface()
+    
+    def show_insights(self):
+        """Display generated insights"""
+        if not st.session_state.insights:
+            st.info("No insights generated yet. Upload some data to get started!")
+            return
+        
+        # Sort insights by priority
+        priority_order = {'high': 0, 'medium': 1, 'low': 2}
+        sorted_insights = sorted(
+            st.session_state.insights, 
+            key=lambda x: priority_order.get(x.get('priority', 'medium'), 1)
+        )
+        
+        for insight in sorted_insights:
+            priority = insight.get('priority', 'medium')
+            icon = insight.get('icon', '💡')
+            title = insight.get('title', 'Insight')
+            description = insight.get('description', '')
+            recommendation = insight.get('recommendation', '')
+            
+            st.markdown(f"""
+            <div class="insight-card priority-{priority}">
+                <div class="insight-header">
+                    <div class="insight-icon {priority}">{icon}</div>
+                    <div class="insight-title">{title}</div>
+                </div>
+                <div class="insight-description">{description}</div>
+                <div class="insight-action">💡 {recommendation}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    def show_data_overview(self):
+        """Show data overview and charts"""
+        for filename, file_data in st.session_state.uploaded_files.items():
+            df = file_data['data']
+            data_type = file_data['type']
+            
+            st.markdown(f"""
+            <div class="chart-container">
+                <div class="chart-title">📄 {filename} ({data_type.title()} Data)</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Show sample data
+            st.dataframe(df.head(10), use_container_width=True)
+            
+            # Create charts based on data type
+            if data_type == 'sales' and 'item' in df.columns:
+                if 'total' in df.columns:
+                    top_items = df.groupby('item')['total'].sum().nlargest(10)
+                    if not top_items.empty:
+                        fig = px.bar(
+                            x=top_items.values,
+                            y=top_items.index,
+                            orientation='h',
+                            title="Top 10 Revenue Generators",
+                            labels={'x': 'Revenue ($)', 'y': 'Item'}
+                        )
+                        fig.update_layout(height=400, showlegend=False)
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                if 'quantity' in df.columns:
+                    top_quantity = df.groupby('item')['quantity'].sum().nlargest(10)
+                    if not top_quantity.empty:
+                        fig = px.bar(
+                            x=top_quantity.values,
+                            y=top_quantity.index,
+                            orientation='h',
+                            title="Top 10 Best Sellers by Quantity",
+                            labels={'x': 'Quantity Sold', 'y': 'Item'}
+                        )
+                        fig.update_layout(height=400, showlegend=False)
+                        st.plotly_chart(fig, use_container_width=True)
+            
+            elif data_type == 'inventory' and 'item' in df.columns and 'quantity' in df.columns:
+                # Inventory levels chart
+                fig = px.bar(
+                    df.nsmallest(15, 'quantity'),
+                    x='quantity',
+                    y='item',
+                    orientation='h',
+                    title="Items with Lowest Stock Levels",
+                    labels={'quantity': 'Stock Quantity', 'item': 'Item'}
+                )
+                fig.update_layout(height=400, showlegend=False)
+                st.plotly_chart(fig, use_container_width=True)
+    
+    def show_query_interface(self):
+        """Natural language query interface"""
+        st.markdown("""
+        <div class="upload-section">
+            <h3>🤔 Ask Questions About Your Data</h3>
+            <p style="color: #64748b;">Ask me anything about your restaurant data in plain English!</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Sample questions
+        st.markdown("**Try these questions:**")
+        
+        sample_questions = [
+            "What are my best selling items?",
+            "Which items make the most money?",
+            "What items are running low in stock?",
+            "Which category performs best?",
+            "Show me underperforming menu items"
+        ]
+        
+        cols = st.columns(2)
+        for i, question in enumerate(sample_questions):
+            with cols[i % 2]:
+                if st.button(question, key=f"q_{i}", use_container_width=True):
+                    answer = self.answer_question(question)
+                    st.markdown(f"""
+                    <div class="insight-card">
+                        <div class="insight-title">Answer:</div>
+                        <div class="insight-description">{answer}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        # Custom question input
+        user_question = st.text_area(
+            "Or ask your own question:",
+            placeholder="Example: Which items should I promote more?",
+            height=100
+        )
+        
+        if st.button("Get Answer", type="primary") and user_question:
+            answer = self.answer_question(user_question)
+            st.markdown(f"""
+            <div class="insight-card">
+                <div class="insight-title">Answer:</div>
+                <div class="insight-description">{answer}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    def answer_question(self, question: str) -> str:
+        """Answer questions about the data"""
+        question_lower = question.lower()
+        
+        # Get all sales data
+        sales_data = []
+        inventory_data = []
+        
+        for file_data in st.session_state.uploaded_files.values():
+            if file_data['type'] == 'sales':
+                sales_data.append(file_data['data'])
+            elif file_data['type'] == 'inventory':
+                inventory_data.append(file_data['data'])
+        
+        if not sales_data and not inventory_data:
+            return "I don't have any data to analyze yet. Please upload some files first!"
+        
+        # Combine sales data
+        all_sales = pd.concat(sales_data) if sales_data else pd.DataFrame()
+        all_inventory = pd.concat(inventory_data) if inventory_data else pd.DataFrame()
+        
+        # Best selling items
+        if any(phrase in question_lower for phrase in ['best selling', 'top selling', 'most popular']):
+            if not all_sales.empty and 'quantity' in all_sales.columns and 'item' in all_sales.columns:
+                top_items = all_sales.groupby('item')['quantity'].sum().nlargest(5)
+                items_list = [f"{item}: {qty} sold" for item, qty in top_items.items()]
+                return f"Your top selling items are:<br>• " + "<br>• ".join(items_list)
+            return "I need sales data with quantities to answer this question."
+        
+        # Revenue leaders
+        if any(phrase in question_lower for phrase in ['most money', 'revenue', 'highest earning']):
+            if not all_sales.empty and 'total' in all_sales.columns and 'item' in all_sales.columns:
+                top_revenue = all_sales.groupby('item')['total'].sum().nlargest(5)
+                items_list = [f"{item}: ${revenue:.2f}" for item, revenue in top_revenue.items()]
+                return f"Your biggest money makers are:<br>• " + "<br>• ".join(items_list)
+            return "I need sales data with revenue amounts to answer this question."
+        
+        # Low stock
+        if any(phrase in question_lower for phrase in ['low stock', 'running low', 'inventory']):
+            if not all_inventory.empty and 'quantity' in all_inventory.columns and 'item' in all_inventory.columns:
+                low_stock = all_inventory[all_inventory['quantity'] < 20].nsmallest(5, 'quantity')
+                if not low_stock.empty:
+                    items_list = [f"{row['item']}: {row['quantity']} left" for _, row in low_stock.iterrows()]
+                    return f"Items running low on stock:<br>• " + "<br>• ".join(items_list)
+                return "Good news! All your items have healthy stock levels (above 20 units)."
+            return "I need inventory data to check stock levels."
+        
+        # Category performance
+        if any(phrase in question_lower for phrase in ['category', 'best category']):
+            if not all_sales.empty and 'category' in all_sales.columns and 'total' in all_sales.columns:
+                cat_revenue = all_sales.groupby('category')['total'].sum().sort_values(ascending=False)
+                items_list = [f"{cat}: ${revenue:.2f}" for cat, revenue in cat_revenue.items()]
+                return f"Category performance by revenue:<br>• " + "<br>• ".join(items_list)
+            return "I need sales data with categories to answer this question."
+        
+        # Underperforming items
+        if any(phrase in question_lower for phrase in ['underperforming', 'worst', 'slow moving']):
+            if not all_sales.empty and 'quantity' in all_sales.columns and 'item' in all_sales.columns:
+                item_performance = all_sales.groupby('item')['quantity'].sum()
+                underperformers = item_performance.nsmallest(5)
+                items_list = [f"{item}: only {qty} sold" for item, qty in underperformers.items()]
+                return f"Items that need attention:<br>• " + "<br>• ".join(items_list) + "<br><br>💡 Consider removing these or running promotions to boost sales."
+            return "I need sales data with quantities to identify underperforming items."
+        
+        return "I'm not sure how to answer that question. Try asking about best sellers, revenue, inventory levels, or categories!"
+
+
+# Run the app
+if __name__ == "__main__":
+    app = RestaurantAnalyticsApp()
+    app.run()
