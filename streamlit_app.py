@@ -827,7 +827,15 @@ class RestaurantAnalyticsApp:
             """, unsafe_allow_html=True)
         
         with col2:
-            total_revenue = df.get('total_amount', df.get('price', 0)).sum()
+            # Try different column names for revenue
+            total_revenue = 0
+            if 'total_amount' in df.columns:
+                total_revenue = df['total_amount'].fillna(0).sum()
+            elif 'unit_price' in df.columns and 'quantity' in df.columns:
+                total_revenue = (df['unit_price'].fillna(0) * df['quantity'].fillna(0)).sum()
+            elif 'price' in df.columns:
+                total_revenue = df['price'].fillna(0).sum()
+            
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-number">${total_revenue:,.0f}</div>
@@ -836,7 +844,18 @@ class RestaurantAnalyticsApp:
             """, unsafe_allow_html=True)
         
         with col3:
-            avg_price = df.get('price', 0).mean()
+            # Calculate average price
+            avg_price = 0
+            if 'unit_price' in df.columns:
+                avg_price = df['unit_price'].fillna(0).mean()
+            elif 'price' in df.columns:
+                avg_price = df['price'].fillna(0).mean()
+            elif 'total_amount' in df.columns and 'quantity' in df.columns:
+                # Calculate from total/quantity
+                valid_rows = (df['quantity'] > 0) & (df['total_amount'] > 0)
+                if valid_rows.any():
+                    avg_price = (df.loc[valid_rows, 'total_amount'] / df.loc[valid_rows, 'quantity']).mean()
+            
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-number">${avg_price:.2f}</div>
@@ -845,31 +864,65 @@ class RestaurantAnalyticsApp:
             """, unsafe_allow_html=True)
         
         with col4:
-            total_quantity = df.get('quantity', 1).sum()
+            # Calculate total quantity
+            total_quantity = 0
+            if 'quantity' in df.columns:
+                total_quantity = df['quantity'].fillna(0).sum()
+            else:
+                total_quantity = len(df)  # Fallback to row count
+            
             st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-number">{total_quantity}</div>
+                <div class="metric-number">{total_quantity:,.0f}</div>
                 <div class="metric-label">Items Sold</div>
             </div>
             """, unsafe_allow_html=True)
         
         # Charts
-        st.markdown("### Revenue by Item")
+        st.markdown("### Data Overview")
         
-        # Create clean revenue chart
-        if 'total_amount' in df.columns:
-            fig = px.bar(
-                df.nlargest(10, 'total_amount'), 
-                x='item_name', 
-                y='total_amount',
-                title="Top 10 Items by Revenue"
-            )
-            fig.update_layout(
-                plot_bgcolor='white',
-                paper_bgcolor='white',
-                font_color='#1a1a1a'
-            )
-            st.plotly_chart(fig, use_container_width=True)
+        # Create clean chart if we have the right columns
+        chart_created = False
+        
+        # Try to create revenue chart
+        if 'item_name' in df.columns and 'total_amount' in df.columns:
+            top_items = df.groupby('item_name')['total_amount'].sum().nlargest(10)
+            if not top_items.empty:
+                fig = px.bar(
+                    x=top_items.index,
+                    y=top_items.values,
+                    title="Top 10 Items by Revenue",
+                    labels={'x': 'Item', 'y': 'Revenue ($)'}
+                )
+                fig.update_layout(
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    font_color='#1a1a1a'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                chart_created = True
+        
+        # Try quantity chart if revenue chart not available
+        elif 'item_name' in df.columns and 'quantity' in df.columns:
+            top_items = df.groupby('item_name')['quantity'].sum().nlargest(10)
+            if not top_items.empty:
+                fig = px.bar(
+                    x=top_items.index,
+                    y=top_items.values,
+                    title="Top 10 Items by Quantity",
+                    labels={'x': 'Item', 'y': 'Quantity Sold'}
+                )
+                fig.update_layout(
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    font_color='#1a1a1a'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                chart_created = True
+        
+        # If no charts possible, show message
+        if not chart_created:
+            st.info("📊 Chart visualization requires 'item_name' column with either 'total_amount' or 'quantity' data.")
         
         # Data table
         st.markdown("### Data Details")
