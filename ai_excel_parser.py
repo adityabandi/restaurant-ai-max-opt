@@ -65,42 +65,107 @@ class AIExcelParser:
             }
     
     def _load_file(self, file_contents: bytes, filename: str) -> pd.DataFrame:
-        """Load file with multiple fallback strategies"""
+        """Enhanced file loading with comprehensive fallback strategies"""
         file_extension = filename.lower().split('.')[-1]
+        
+        # Record errors for better feedback
+        error_log = []
         
         try:
             if file_extension == 'csv':
-                # Try different encodings and separators
-                for encoding in ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']:
-                    try:
-                        for sep in [',', ';', '\t', '|']:
-                            try:
-                                df = pd.read_csv(io.BytesIO(file_contents), encoding=encoding, sep=sep)
-                                if len(df.columns) > 1 and len(df) > 0:
-                                    return self._clean_dataframe(df)
-                            except:
-                                continue
-                    except:
-                        continue
-            else:
-                # Excel files
+                # Try different encodings and separators with detailed error tracking
+                for encoding in ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1', 'utf-16']:
+                    for sep in [',', ';', '\t', '|']:
+                        try:
+                            df = pd.read_csv(io.BytesIO(file_contents), encoding=encoding, sep=sep)
+                            if len(df.columns) > 1 and len(df) > 0:
+                                print(f"Successfully loaded CSV with encoding {encoding} and separator '{sep}'")
+                                return self._clean_dataframe(df)
+                        except Exception as e:
+                            error_msg = f"Failed with encoding {encoding}, separator '{sep}': {str(e)}"
+                            error_log.append(error_msg)
+                            continue
+                
+                # If all standard approaches fail, try to fix corrupted CSV
+                try:
+                    # Try to decode with replacement of bad characters
+                    text_content = file_contents.decode('utf-8', errors='replace')
+                    lines = text_content.split('\n')
+                    
+                    # Filter out problematic lines
+                    valid_lines = []
+                    for i, line in enumerate(lines):
+                        try:
+                            if i == 0 or len(line.strip()) > 0:  # Keep header and non-empty lines
+                                valid_lines.append(line)
+                        except:
+                            error_log.append(f"Skipped corrupted line {i}")
+                    
+                    # Try to parse the cleaned content
+                    if valid_lines:
+                        cleaned_content = '\n'.join(valid_lines)
+                        df = pd.read_csv(io.StringIO(cleaned_content))
+                        if len(df.columns) > 1 and len(df) > 0:
+                            print("Loaded CSV after repairing corrupted content")
+                            return self._clean_dataframe(df)
+                except Exception as e:
+                    error_log.append(f"Failed to repair CSV: {str(e)}")
+            
+            elif file_extension in ['xlsx', 'xls']:
+                # Try multiple Excel reading approaches
+                excel_errors = []
+                
+                # First try with openpyxl (modern Excel files)
                 try:
                     df = pd.read_excel(io.BytesIO(file_contents), engine='openpyxl')
+                    if len(df.columns) > 0 and len(df) > 0:
+                        print("Successfully loaded Excel with openpyxl engine")
+                        return self._clean_dataframe(df)
+                except Exception as e:
+                    excel_errors.append(f"openpyxl failed: {str(e)}")
+                
+                # Then try with xlrd (older Excel files)
+                try:
+                    df = pd.read_excel(io.BytesIO(file_contents), engine='xlrd')
+                    if len(df.columns) > 0 and len(df) > 0:
+                        print("Successfully loaded Excel with xlrd engine")
+                        return self._clean_dataframe(df)
+                except Exception as e:
+                    excel_errors.append(f"xlrd failed: {str(e)}")
+                
+                # Try all sheets if first sheet fails
+                try:
+                    xls = pd.ExcelFile(io.BytesIO(file_contents))
+                    for sheet_name in xls.sheet_names:
+                        try:
+                            df = pd.read_excel(io.BytesIO(file_contents), sheet_name=sheet_name)
+                            if len(df.columns) > 0 and len(df) > 0:
+                                print(f"Successfully loaded Excel sheet: {sheet_name}")
+                                return self._clean_dataframe(df)
+                        except:
+                            continue
+                except Exception as e:
+                    excel_errors.append(f"Multi-sheet attempt failed: {str(e)}")
+                
+                error_log.extend(excel_errors)
+            
+            # Last resort - try as CSV regardless of extension
+            try:
+                df = pd.read_csv(io.BytesIO(file_contents))
+                if len(df.columns) > 0 and len(df) > 0:
+                    print(f"Successfully loaded {file_extension} file as CSV")
                     return self._clean_dataframe(df)
-                except:
-                    # Try with different engines
-                    try:
-                        df = pd.read_excel(io.BytesIO(file_contents), engine=None)
-                        return self._clean_dataframe(df)
-                    except:
-                        # Last resort - try reading as CSV
-                        df = pd.read_csv(io.BytesIO(file_contents))
-                        return self._clean_dataframe(df)
+            except Exception as e:
+                error_log.append(f"Last resort CSV attempt failed: {str(e)}")
+            
+            # If we got here, all attempts failed
+            error_details = "\n".join(error_log[-5:])  # Last 5 errors
+            raise Exception(f"Could not read file after multiple attempts. Last errors:\n{error_details}")
         
         except Exception as e:
-            raise Exception(f"Could not read file: {str(e)}")
+            raise Exception(f"File processing error: {str(e)}")
         
-        raise Exception("Unable to parse file format")
+        raise Exception("Unable to parse file format. Supported formats: CSV, Excel (.xlsx, .xls)")
     
     def _clean_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         """Clean and standardize dataframe"""
