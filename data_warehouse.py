@@ -1,3 +1,11 @@
+# Imported at the top for better organization
+# Added this here instead to make it globally available for importing
+
+def get_sample_data() -> pd.DataFrame:
+    """Load sample sales data from a demo CSV"""
+    demo_file_path = 'demo-data/sample-sales-data.csv'
+    return pd.read_csv(demo_file_path)
+
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Set, Optional, Tuple
