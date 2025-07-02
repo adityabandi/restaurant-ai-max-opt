@@ -1,24 +1,26 @@
 import pandas as pd
 import numpy as np
 
-from typing import Dict, List, Set, Optional, Tuple
+def get_sample_data() -> pd.DataFrame:
+    """Load sample sales data from a demo CSV"""
+    demo_file_path = 'demo-data/sample-sales-data.csv'
+    return pd.read_csv(demo_file_path)
+
+from typing import Dict, List, Set, Optional, Tuple, Any
 from datetime import datetime
 import json
+from database import RestaurantDB
 
 class RestaurantDataWarehouse:
     """Central data management system for restaurant analytics"""
     
-    def __init__(self):
-        self.datasets = {}
+    def __init__(self, db_path: str = 'restaurant_analytics.db'):
+        self.db = RestaurantDB(db_path)
         self.relationships = {}
-        self.metadata = {}
         self.last_updated = datetime.now()
+        # Load existing datasets metadata from DB on init
+        self.metadata = {ds['dataset_id']: ds for ds in self.db.get_all_datasets_metadata()}
 
-    @staticmethod
-    def get_sample_data() -> pd.DataFrame:
-        """Load sample sales data from a demo CSV"""
-        demo_file_path = 'demo-data/sample-sales-data.csv'
-        return pd.read_csv(demo_file_path)
     
     def add_dataset(self, dataset_id: str, data_type: str, data: List[Dict], source_file: str = None) -> bool:
         """Add a new dataset to the warehouse
@@ -35,15 +37,17 @@ class RestaurantDataWarehouse:
         if not data:
             return False
             
-        # Store the dataset with metadata
-        self.datasets[dataset_id] = data
-        
-        # Store metadata
+        # Add/update dataset in the database
+        success = self.db.add_dataset(dataset_id, data_type, data, source_file)
+        if not success:
+            return False
+
+        # Update in-memory metadata after successful DB operation
         self.metadata[dataset_id] = {
             'data_type': data_type,
             'source_file': source_file,
             'row_count': len(data),
-            'added_at': datetime.now(),
+            'added_at': datetime.now(), # This will be updated by DB, but keep for consistency
             'columns': list(data[0].keys()) if data else [],
         }
         
@@ -54,37 +58,31 @@ class RestaurantDataWarehouse:
         return True
     
     def get_dataset(self, dataset_id: str) -> Optional[List[Dict]]:
-        """Retrieve a dataset by ID"""
-        return self.datasets.get(dataset_id)
+        """Retrieve a dataset by ID from the database"""
+        dataset_record = self.db.get_dataset(dataset_id)
+        return dataset_record['data'] if dataset_record else None
     
     def get_datasets_by_type(self, data_type: str) -> Dict[str, List[Dict]]:
-        """Get all datasets of a specific type"""
-        result = {}
-        for dataset_id, metadata in self.metadata.items():
-            if metadata['data_type'] == data_type:
-                result[dataset_id] = self.datasets[dataset_id]
-        return result
+        """Get all datasets of a specific type from the database"""
+        dataset_records = self.db.get_datasets_by_type(data_type)
+        return {ds['dataset_id']: ds['data'] for ds in dataset_records}
     
     def get_all_data_types(self) -> Set[str]:
-        """Get all unique data types in the warehouse"""
-        return {metadata['data_type'] for metadata in self.metadata.values()}
+        """Get all unique data types in the warehouse from the database"""
+        return set(self.db.get_all_data_types())
     
     def get_dataset_count(self) -> int:
-        """Get the count of datasets"""
-        return len(self.datasets)
+        """Get the count of datasets from the database"""
+        return self.db.get_dataset_count()
     
     def get_combined_dataset(self, data_type: str) -> List[Dict]:
-        """Combine all datasets of a specific type"""
-        combined = []
-        for dataset_id, metadata in self.metadata.items():
-            if metadata['data_type'] == data_type:
-                combined.extend(self.datasets[dataset_id])
-        return combined
+        """Combine all datasets of a specific type from the database"""
+        return self.db.get_combined_dataset(data_type)
     
     def _update_relationships(self, new_dataset_id: str) -> None:
         """Detect and update relationships between datasets"""
         new_data_type = self.metadata[new_dataset_id]['data_type']
-        new_data = self.datasets[new_dataset_id]
+        new_data = self.get_dataset(new_dataset_id) # Retrieve data from DB
         
         # Define relationship rules
         relationship_rules = {
@@ -100,7 +98,7 @@ class RestaurantDataWarehouse:
                 continue
                 
             existing_data_type = metadata['data_type']
-            existing_data = self.datasets[dataset_id]
+            existing_data = self.get_dataset(dataset_id) # Retrieve data from DB
             
             # Check if we have a rule for this combination
             rule_key = (new_data_type, existing_data_type)
@@ -188,116 +186,24 @@ class RestaurantDataWarehouse:
             dataset_ids = rel_key.split('-')
             
             if rel_data['type'] == 'sales_inventory':
-                # Generate sales-inventory insights
-                sales_inventory_insights = self._generate_sales_inventory_insights(
-                    self.datasets[dataset_ids[0]],
-                    self.datasets[dataset_ids[1]],
-                    rel_data
-                )
-                insights.extend(sales_inventory_insights)
-        
-        return insights
-    
-    def _generate_sales_inventory_insights(self, sales_data: List[Dict], inventory_data: List[Dict], 
-                                          relationship: Dict) -> List[Dict]:
-        """Generate insights based on sales and inventory data"""
-        insights = []
-        
-        try:
-            # Create DataFrames
-            sales_df = pd.DataFrame(sales_data)
-            inventory_df = pd.DataFrame(inventory_data)
-            
-            # Skip if we don't have the necessary columns
-            if 'item_name' not in sales_df.columns or 'quantity' not in sales_df.columns or \
-               'item_name' not in inventory_df.columns or 'quantity' not in inventory_df.columns:
-                return []
-            
-            # Get top selling items
-            sales_summary = sales_df.groupby('item_name')['quantity'].sum().reset_index()
-            sales_summary.columns = ['item_name', 'quantity_sold']
-            
-            # Add lowercase column for matching
-            sales_summary['item_lower'] = sales_summary['item_name'].str.lower()
-            inventory_df['item_lower'] = inventory_df['item_name'].str.lower()
-            
-            # Merge datasets
-            merged = pd.merge(
-                sales_summary,
-                inventory_df,
-                left_on='item_lower',
-                right_on='item_lower',
-                how='inner',
-                suffixes=('_sales', '_inventory')
-            )
-            
-            # Calculate days of inventory remaining
-            if not merged.empty:
-                # Assume sales data represents 30 days
-                merged['daily_usage'] = merged['quantity_sold'] / 30
-                merged['days_remaining'] = merged['quantity'] / merged['daily_usage']
-                merged['days_remaining'] = merged['days_remaining'].fillna(99)  # Handle divide by zero
-                merged['days_remaining'] = merged['days_remaining'].round(1)
+                # Generate sales-inventory insights using the new InventoryOptimizer
+                optimizer = InventoryOptimizer()
+                sales_data = self.get_dataset(dataset_ids[0])
+                inventory_data = self.get_dataset(dataset_ids[1])
                 
-                # Find items at risk of stockout
-                stockout_risks = merged[merged['days_remaining'] < 7].sort_values('days_remaining')
-                
-                # Generate insights
-                for _, row in stockout_risks.iterrows():
-                    insights.append({
-                        'type': 'inventory_alert',
-                        'priority': 'high' if row['days_remaining'] < 3 else 'medium',
-                        'title': f"⚠️ {row['item_name_sales']} Stockout Risk: {row['days_remaining']} Days Left",
-                        'description': f"High-selling item with low inventory. Only {row['quantity']} units left with daily usage of {row['daily_usage']:.1f} units.",
-                        'recommendation': f"Order {int(row['daily_usage'] * 14)} units to maintain 2-week supply",
-                        'savings_potential': int(row['daily_usage'] * row['quantity_sold'] * 0.2),  # Estimated lost sales prevention
-                        'confidence_score': 0.85,
-                        'affected_items': [row['item_name_sales']]
-                    })
-                
-                # Overstocked items
-                overstocked = merged[merged['days_remaining'] > 60].sort_values('days_remaining', ascending=False)
-                
-                if not overstocked.empty:
-                    insights.append({
-                        'type': 'inventory_efficiency',
-                        'priority': 'medium',
-                        'title': f"💰 Overstocked Items: Capital Efficiency Opportunity",
-                        'description': f"You have {len(overstocked)} items with over 60 days of inventory. This ties up unnecessary capital.",
-                        'recommendation': "Reduce order quantities for these items to free up capital",
-                        'savings_potential': int(sum(overstocked['quantity'] * 0.5 * overstocked['unit_cost']) if 'unit_cost' in overstocked.columns else 500),
-                        'confidence_score': 0.8,
-                        'affected_items': list(overstocked['item_name_sales'])
-                    })
-                
-                # Overall inventory management insight
-                if len(merged) > 5:  # Only if we have enough matching items
-                    insights.append({
-                        'type': 'inventory_management',
-                        'priority': 'medium',
-                        'title': f"🔄 Inventory-Sales Alignment Opportunity",
-                        'description': f"Your inventory levels for top-selling items need adjustment based on sales velocity.",
-                        'recommendation': "Implement automatic reorder points based on actual sales data",
-                        'savings_potential': 1200,
-                        'confidence_score': 0.82,
-                        'action_items': [
-                            "Set up weekly inventory-sales reconciliation",
-                            "Create safety stock levels for top 10 items",
-                            "Reduce order frequency for slow-moving items"
-                        ]
-                    })
-        except Exception as e:
-            print(f"Error generating sales-inventory insights: {str(e)}")
+                if sales_data and inventory_data:
+                    sales_inventory_insights = optimizer.generate_inventory_insights(sales_data, inventory_data)
+                    insights.extend(sales_inventory_insights)
         
         return insights
     
     def get_warehouse_stats(self) -> Dict:
         """Get statistics about the data warehouse"""
         stats = {
-            'dataset_count': len(self.datasets),
+            'dataset_count': self.db.get_dataset_count(),
             'relationship_count': len(self.relationships),
             'data_types': list(self.get_all_data_types()),
-            'total_records': sum(len(data) for data in self.datasets.values()),
+            'total_records': sum(ds['row_count'] for ds in self.db.get_all_datasets_metadata()),
             'last_updated': self.last_updated.isoformat()
         }
         

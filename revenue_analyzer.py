@@ -3,6 +3,7 @@ import numpy as np
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timedelta
 import statistics
+from menu_engineering import MenuEngineering
 
 class RevenueAnalyzer:
     def __init__(self):
@@ -283,81 +284,73 @@ class RevenueAnalyzer:
     
     def _analyze_menu_engineering_matrix(self, menu_items: Dict, total_revenue: float) -> List[Dict]:
         """Advanced menu engineering using Stars/Plow Horses/Puzzles/Dogs matrix"""
+        menu_engineering = MenuEngineering()
+        classified_items = menu_engineering.analyze(list(menu_items.values()))
+        
         insights = []
         
-        # Calculate averages for classification
-        avg_margin = sum(item['profit_margin'] for item in menu_items.values()) / len(menu_items)
-        avg_popularity = sum(item['quantity_sold'] for item in menu_items.values()) / len(menu_items)
-        
-        stars = [(name, data) for name, data in menu_items.items() 
-                if data['profit_margin'] > avg_margin and data['quantity_sold'] > avg_popularity]
-        
-        plow_horses = [(name, data) for name, data in menu_items.items() 
-                      if data['profit_margin'] <= avg_margin and data['quantity_sold'] > avg_popularity]
-        
-        puzzles = [(name, data) for name, data in menu_items.items() 
-                  if data['profit_margin'] > avg_margin and data['quantity_sold'] <= avg_popularity]
-        
-        dogs = [(name, data) for name, data in menu_items.items() 
-               if data['profit_margin'] <= avg_margin and data['quantity_sold'] <= avg_popularity]
+        stars = [item for item in classified_items if item['classification'] == 'Star']
+        plow_horses = [item for item in classified_items if item['classification'] == 'Plow-horse']
+        puzzles = [item for item in classified_items if item['classification'] == 'Puzzle']
+        dogs = [item for item in classified_items if item['classification'] == 'Dog']
         
         # Stars Strategy
         if stars:
-            star_revenue_potential = sum(data['total_revenue'] * 0.15 for _, data in stars)
+            star_revenue_potential = sum(data['total_revenue'] * 0.15 for data in stars)
             insights.append({
                 'type': 'menu_engineering',
                 'priority': 'high',
                 'title': f'⭐ Stars Promotion Strategy: +${star_revenue_potential:,.0f}/month',
                 'description': f'{len(stars)} items are your Stars - high profit, high popularity',
-                'recommendation': f'Promote {stars[0][0]} heavily - it\'s your profit engine',
+                'recommendation': f'Promote {stars[0]["item_name"]} heavily - it\'s your profit engine',
                 'savings_potential': star_revenue_potential,
                 'action_items': [
-                    f'Move {stars[0][0]} to top-right menu position (+22% visibility)',
-                    f'Add premium description: "Customer Favorite {stars[0][0]}"',
-                    f'Train servers to suggest {stars[0][0]} first',
+                    f'Move {stars[0]["item_name"]} to top-right menu position (+22% visibility)',
+                    f'Add premium description: "Customer Favorite {stars[0]["item_name"]}"',
+                    f'Train servers to suggest {stars[0]["item_name"]} first',
                     'Consider slight price increase (5-8%) due to high demand'
                 ],
-                'affected_items': [name for name, _ in stars[:3]],
+                'affected_items': [data["item_name"] for data in stars[:3]],
                 'confidence_score': 0.92
             })
         
-        # Plow Horses Strategy  
+        # Plow Horses Strategy
         if plow_horses:
-            plow_horse_optimization = sum(data['total_revenue'] * 0.12 for _, data in plow_horses)
+            plow_horse_optimization = sum(data['total_revenue'] * 0.12 for data in plow_horses)
             insights.append({
                 'type': 'cost_engineering',
-                'priority': 'high', 
+                'priority': 'high',
                 'title': f'🐴 Plow Horse Optimization: +${plow_horse_optimization:,.0f}/month',
                 'description': f'{len(plow_horses)} popular items have low margins - huge opportunity',
-                'recommendation': f'Reengineer {plow_horses[0][0]} costs or increase price carefully',
+                'recommendation': f'Reengineer {plow_horses[0]["item_name"]} costs or increase price carefully',
                 'savings_potential': plow_horse_optimization,
                 'action_items': [
-                    f'Negotiate better pricing on {plow_horses[0][0]} ingredients',
+                    f'Negotiate better pricing on {plow_horses[0]["item_name"]} ingredients',
                     f'Reduce portion size by 10-15% (customers likely won\'t notice)',
-                    f'Test ${plow_horses[0][1]["unit_price"] * 1.05:.2f} price (+5%) for {plow_horses[0][0]}',
+                    f'Test ${plow_horses[0]["unit_price"] * 1.05:.2f} price (+5%) for {plow_horses[0]["item_name"]}',
                     'Bundle with high-margin sides'
                 ],
-                'affected_items': [name for name, _ in plow_horses[:3]],
+                'affected_items': [data["item_name"] for data in plow_horses[:3]],
                 'confidence_score': 0.88
             })
         
         # Dogs Elimination Strategy
         if dogs:
-            dogs_cost_savings = sum(data['labor_cost_per_item'] * data['quantity_sold'] * 0.7 for _, data in dogs)
+            dogs_cost_savings = sum(data['labor_cost_per_item'] * data['quantity_sold'] * 0.7 for data in dogs)
             insights.append({
                 'type': 'menu_simplification',
                 'priority': 'medium',
                 'title': f'🗑️ Menu Deadweight Elimination: +${dogs_cost_savings:,.0f}/month',
                 'description': f'{len(dogs)} items are Dogs - low profit, low popularity',
-                'recommendation': f'Consider removing {dogs[0][0]} and {len(dogs)-1} other underperformers',
+                'recommendation': f'Consider removing {dogs[0]["item_name"]} and {len(dogs)-1} other underperformers',
                 'savings_potential': dogs_cost_savings,
                 'action_items': [
-                    f'Remove {dogs[0][0]} from menu (contributes only {dogs[0][1]["revenue_percentage"]:.1f}% revenue)',
+                    f'Remove {dogs[0]["item_name"]} from menu (contributes only {dogs[0]["revenue_percentage"]:.1f}% revenue)',
                     'Simplify kitchen operations and reduce prep time',
                     'Redirect ingredients to star items',
                     'Focus staff training on profitable items'
                 ],
-                'affected_items': [name for name, _ in dogs[:3]],
+                'affected_items': [data["item_name"] for data in dogs[:3]],
                 'confidence_score': 0.85
             })
         

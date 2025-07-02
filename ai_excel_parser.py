@@ -3,6 +3,7 @@ import io
 import json
 import os
 from typing import Dict, List, Tuple
+from thefuzz import fuzz
 
 class AIExcelParser:
     def __init__(self):
@@ -110,7 +111,10 @@ class AIExcelParser:
         best_confidence = 0.0
 
         for data_type, required_fields in data_type_patterns.items():
-            if all(field in columns for field in required_fields):
+            matches = sum(max(fuzz.ratio(col, pattern) for pattern in required_fields) for col in columns)
+            confidence = matches / (len(required_fields) * 100)
+            if confidence > best_confidence:
+                best_confidence = confidence
                 best_data_type = data_type
 
         # Column mapping (simplified)
