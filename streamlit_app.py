@@ -1178,60 +1178,56 @@ class RestaurantAnalyticsApp:
         )
         st.plotly_chart(fig, use_container_width=True)
 
+    def _load_demo_data(self):
+        """Load and process demo data"""
+        # This function is now responsible for the whole demo data process
+        with st.spinner("Loading demo restaurant..."):
+            # Get sample data (now a local function)
+            sample_data = get_sample_data()
+            
+            # Process the data as if it were an uploaded file
+            # Convert DataFrame to a file-like object for the parser
+            from io import BytesIO
+            
+            output = BytesIO()
+            sample_data.to_csv(output, index=False)
+            output.seek(0)
+            
+            # Create a mock uploaded file
+            class MockUploadedFile:
+                def __init__(self, name, data):
+                    self.name = name
+                    self.data = data
+                def read(self):
+                    return self.data
+            
+            mock_file = MockUploadedFile("demo-sales-data.csv", output.read())
+            
+            # Process with the existing logic
+            result = self._process_uploaded_file(mock_file, show_messages=False)
+            
+            if result['success']:
+                st.session_state.uploaded_data = {
+                    'upload_id': 'demo-data',
+                    'filenames': [result['filename']],
+                    'data_types': [result['data_type']],
+                    'processed_data': result['processed_data'],
+                    'individual_datasets': [result['processed_data']],
+                    'ai_confidence': result.get('ai_confidence', 0.95)
+                }
+                
+                # Generate insights from the demo data
+                self._generate_insights_from_multiple_sources(
+                    [result['processed_data']],
+                    [result['data_type']]
+                )
+                
+                st.success("✅ Loaded demo data and generated insights!")
+                st.rerun()
+            else:
+                st.error("❌ Failed to load demo data.")
+
 # Run the application
 if __name__ == "__main__":
     app = RestaurantAnalyticsApp()
     app.run()
-def _load_demo_data(self):
-    """Load and process demo data"""
-    # This function is now responsible for the whole demo data process
-    with st.spinner("Loading demo restaurant..."):
-        # Get sample data (now a local function)
-        sample_data = get_sample_data()
-        
-        # Process the data as if it were an uploaded file
-        # Convert DataFrame to a file-like object for the parser
-        from io import BytesIO
-        
-        output = BytesIO()
-        sample_data.to_csv(output, index=False)
-        output.seek(0)
-        
-        # Create a mock uploaded file
-        class MockUploadedFile:
-            def __init__(self, name, data):
-                self.name = name
-                self.data = data
-            def read(self):
-                return self.data
-        
-        mock_file = MockUploadedFile("demo-sales-data.csv", output.read())
-        
-        # Process with the existing logic
-        result = self._process_uploaded_file(mock_file, show_messages=False)
-        
-        if result['success']:
-            st.session_state.uploaded_data = {
-                'upload_id': 'demo-data',
-                'filenames': [result['filename']],
-                'data_types': [result['data_type']],
-                'processed_data': result['processed_data'],
-                'individual_datasets': [result['processed_data']],
-                'ai_confidence': result.get('ai_confidence', 0.95)
-            }
-            
-            # Generate insights from the demo data
-            self._generate_insights_from_multiple_sources(
-                [result['processed_data']],
-                [result['data_type']]
-            )
-            
-            st.success("✅ Loaded demo data and generated insights!")
-            st.rerun()
-        else:
-            st.error("❌ Failed to load demo data.")
-
-def get_sample_data() -> pd.DataFrame:
-    """Load sample sales data from a demo CSV"""
-    demo_file_path = 'demo-data/sample-sales-data.csv'
-    return pd.read_csv(demo_file_path)
