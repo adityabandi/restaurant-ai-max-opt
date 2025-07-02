@@ -1,13 +1,6 @@
-# Imported at the top for better organization
-# Added this here instead to make it globally available for importing
-
-def get_sample_data() -> pd.DataFrame:
-    """Load sample sales data from a demo CSV"""
-    demo_file_path = 'demo-data/sample-sales-data.csv'
-    return pd.read_csv(demo_file_path)
-
 import pandas as pd
 import numpy as np
+
 from typing import Dict, List, Set, Optional, Tuple
 from datetime import datetime
 import json
@@ -20,6 +13,12 @@ class RestaurantDataWarehouse:
         self.relationships = {}
         self.metadata = {}
         self.last_updated = datetime.now()
+
+    @staticmethod
+    def get_sample_data() -> pd.DataFrame:
+        """Load sample sales data from a demo CSV"""
+        demo_file_path = 'demo-data/sample-sales-data.csv'
+        return pd.read_csv(demo_file_path)
     
     def add_dataset(self, dataset_id: str, data_type: str, data: List[Dict], source_file: str = None) -> bool:
         """Add a new dataset to the warehouse

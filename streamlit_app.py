@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from enhanced_excel_parser import EnhancedExcelParser
 from hybrid_ai_system import SmartAnalytics
-from data_warehouse import RestaurantDataWarehouse, get_sample_data
+from data_warehouse import RestaurantDataWarehouse
 import datetime
 
 # Helper class for data handling
