@@ -14,10 +14,30 @@ import json
 import os
 
 # Import our enhanced components
-from ui_components import NeumorphicUI, DataPreviewUI
-from enhanced_excel_parser import EnhancedExcelParser
-from restaurant_analytics import RestaurantAnalytics
-from data_warehouse import RestaurantDataWarehouse
+try:
+    from ui_components import NeumorphicUI, DataPreviewUI
+except ImportError:
+    st.error("UI components not found. Please check installation.")
+    st.stop()
+
+try:
+    from enhanced_excel_parser import EnhancedExcelParser
+except ImportError:
+    # Fallback to AI Excel Parser if enhanced version fails
+    from ai_excel_parser import AIExcelParser as EnhancedExcelParser
+
+try:
+    from hybrid_ai_system import HybridAI, SmartAnalytics
+except ImportError:
+    HybridAI = None
+    SmartAnalytics = None
+
+try:
+    from restaurant_analytics import RestaurantAnalytics
+    from data_warehouse import RestaurantDataWarehouse
+except ImportError:
+    RestaurantAnalytics = None
+    RestaurantDataWarehouse = None
 
 # Page config
 st.set_page_config(
@@ -29,9 +49,18 @@ st.set_page_config(
 
 # Initialize session state
 if 'data_warehouse' not in st.session_state:
-    st.session_state.data_warehouse = RestaurantDataWarehouse()
+    if RestaurantDataWarehouse:
+        st.session_state.data_warehouse = RestaurantDataWarehouse()
+    else:
+        st.session_state.data_warehouse = type('DataWarehouse', (), {'datasets': {}})()
+        
 if 'analytics_engine' not in st.session_state:
-    st.session_state.analytics_engine = RestaurantAnalytics()
+    if RestaurantAnalytics:
+        st.session_state.analytics_engine = RestaurantAnalytics()
+    else:
+        st.session_state.analytics_engine = type('Analytics', (), {
+            'generate_comprehensive_insights': lambda: {}
+        })()
 if 'uploaded_files' not in st.session_state:
     st.session_state.uploaded_files = []
 if 'current_view' not in st.session_state:
@@ -47,6 +76,14 @@ class RestaurantApp:
         self.parser = EnhancedExcelParser()
         self.ui = NeumorphicUI()
         self.preview_ui = DataPreviewUI()
+        
+        # Initialize hybrid AI if available
+        if HybridAI and SmartAnalytics:
+            self.ai = HybridAI()
+            self.smart_analytics = SmartAnalytics()
+        else:
+            self.ai = None
+            self.smart_analytics = None
         
     def run(self):
         """Main app entry point"""
@@ -396,8 +433,107 @@ class RestaurantApp:
             st.info("Upload data to see insights")
             return
         
-        # Get latest insights
+        # Show AI status in sidebar
+        with st.sidebar:
+            if self.ai and self.ai.is_available():
+                st.markdown("### 🤖 AI Status")
+                st.success("✅ Hybrid AI Active")
+                st.caption("Using Haiku for parsing, Sonnet for insights")
+                
+                # Show cost tracking if available
+                if 'ai_costs' in st.session_state:
+                    st.metric("Session Cost", f"${st.session_state.ai_costs:.4f}")
+            else:
+                st.warning("⚠️ AI not connected")
+        
+        # Get insights using hybrid AI if available
+        if self.smart_analytics:
+            # Get sales data from warehouse
+            sales_data = None
+            for dataset in st.session_state.data_warehouse.datasets.values():
+                if dataset['data_type'] == 'sales':
+                    sales_data = dataset['data']
+                    break
+            
+            if sales_data is not None and not sales_data.empty:
+                with st.spinner("🧠 AI analyzing profit opportunities (using Sonnet)..."):
+                    profit_result = self.smart_analytics.analyze_profit_opportunities(sales_data)
+                    
+                    if profit_result.get('success'):
+                        # Update cost tracking
+                        if 'ai_costs' not in st.session_state:
+                            st.session_state.ai_costs = 0
+                        st.session_state.ai_costs += profit_result['cost_estimate']['total_cost']
+                        
+                        # Display AI insights
+                        st.markdown("### 🤖 AI-Powered Profit Analysis")
+                        
+                        insights_data = profit_result['result']
+                        if isinstance(insights_data, dict) and 'raw_response' in insights_data:
+                            st.markdown(insights_data['raw_response'])
+                        else:
+                            # Format structured insights
+                            for key, value in insights_data.items():
+                                st.markdown(f"**{key.replace('_', ' ').title()}**")
+                                if isinstance(value, list):
+                                    for item in value:
+                                        st.markdown(f"- {item}")
+                                elif isinstance(value, dict):
+                                    for k, v in value.items():
+                                        st.markdown(f"- {k}: {v}")
+                                else:
+                                    st.markdown(value)
+                                st.markdown("")
+        
+        # Regular insights from analytics engine
         insights = st.session_state.analytics_engine.generate_comprehensive_insights()
+        
+        # AI Analysis Controls
+        if self.smart_analytics:
+            st.markdown("### 🤖 AI Analysis Controls")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                if st.button("🧠 Deep Profit Analysis", help="Uses Sonnet AI (~$0.02)"):
+                    with st.spinner("Analyzing with advanced AI..."):
+                        # Run profit analysis
+                        sales_data = self._get_sales_data()
+                        if sales_data is not None:
+                            result = self.smart_analytics.analyze_profit_opportunities(sales_data)
+                            if result.get('success'):
+                                st.session_state['latest_ai_analysis'] = result
+                                st.rerun()
+            
+            with col2:
+                if st.button("📊 Menu Optimization", help="Uses Sonnet AI (~$0.015)"):
+                    with st.spinner("Optimizing menu with AI..."):
+                        # Get menu data
+                        menu_data = self._get_menu_data()
+                        if menu_data is not None:
+                            result = self.smart_analytics.optimize_menu(menu_data)
+                            if result.get('success'):
+                                st.session_state['latest_menu_analysis'] = result
+                                st.rerun()
+            
+            with col3:
+                if st.button("💡 Quick Insights", help="Uses Haiku AI (~$0.001)"):
+                    with st.spinner("Generating quick insights..."):
+                        # Use pattern-based insights (cheaper)
+                        st.session_state['show_quick_insights'] = True
+                        st.rerun()
+            
+            # Display latest AI analysis if available
+            if 'latest_ai_analysis' in st.session_state:
+                analysis = st.session_state['latest_ai_analysis']
+                st.markdown("#### Latest AI Analysis")
+                st.info(f"Model used: {analysis['model_used'].split('-')[2].title()} | Cost: ${analysis['cost_estimate']['total_cost']:.4f}")
+                
+                # Display the analysis
+                if isinstance(analysis['result'], dict) and 'raw_response' in analysis['result']:
+                    st.markdown(analysis['result']['raw_response'])
+                else:
+                    st.json(analysis['result'])
         
         # Profit opportunities
         st.markdown("### 💰 Profit Opportunities")
@@ -706,6 +842,36 @@ class RestaurantApp:
             for dataset in st.session_state.data_warehouse.datasets.values()
         )
         return total_revenue / total_transactions if total_transactions > 0 else 0
+    
+    def _get_sales_data(self) -> Optional[pd.DataFrame]:
+        """Get sales data from warehouse"""
+        for dataset in st.session_state.data_warehouse.datasets.values():
+            if dataset['data_type'] == 'sales':
+                return dataset['data']
+        return None
+    
+    def _get_menu_data(self) -> Optional[pd.DataFrame]:
+        """Get or create menu data from sales data"""
+        sales_data = self._get_sales_data()
+        if sales_data is None or sales_data.empty:
+            return None
+        
+        # Create menu data from sales data
+        if 'item_name' in sales_data.columns:
+            menu_data = sales_data.groupby('item_name').agg({
+                'unit_price': 'mean',
+                'quantity': 'sum',
+                'total_amount': 'sum'
+            }).reset_index()
+            
+            menu_data.columns = ['item_name', 'price', 'quantity_sold', 'total_revenue']
+            
+            # Estimate costs (30% food cost as default)
+            menu_data['cost'] = menu_data['price'] * 0.3
+            
+            return menu_data
+        
+        return None
 
 
 # Run the app
