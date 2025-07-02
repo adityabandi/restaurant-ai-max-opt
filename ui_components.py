@@ -14,17 +14,17 @@ class NeumorphicUI:
     
     # Color palette - soft monochromatic with subtle variations
     COLORS = {
-        'background': '#E0E5EC',
-        'surface': '#E0E5EC',
-        'primary': '#6C7EE1',
-        'primary_dark': '#5B6FD8',
+        'background': '#F5F6F8',
+        'surface': '#FFFFFF',
+        'primary': '#172A3A',
+        'accent': '#2E8540',
         'success': '#52C41A',
         'warning': '#FAAD14',
         'danger': '#F5222D',
         'text_primary': '#2C3E50',
         'text_secondary': '#7F8C8D',
         'shadow_light': '#FFFFFF',
-        'shadow_dark': '#A3B1C6'
+        'shadow_dark': '#BECCD3'
     }
     
     @staticmethod
@@ -184,7 +184,7 @@ class NeumorphicUI:
         }
         
         .neu-button-primary {
-            background: linear-gradient(135deg, #6C7EE1 0%, #5B6FD8 100%);
+            background: #172A3A;
             color: white;
         }
         
@@ -279,7 +279,7 @@ class NeumorphicUI:
         
         .neu-progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #6C7EE1 0%, #5B6FD8 100%);
+            background: linear-gradient(90deg, #172A3A 0%, #2E8540 100%);
             border-radius: 20px;
             transition: width 0.3s ease;
             box-shadow: 2px 2px 4px rgba(108, 126, 225, 0.3);
@@ -311,7 +311,7 @@ class NeumorphicUI:
         }
         
         .neu-tab.active {
-            color: #6C7EE1;
+            color: #172A3A;
             box-shadow: 
                 inset 2px 2px 4px #A3B1C6,
                 inset -2px -2px 4px #FFFFFF;
@@ -333,7 +333,7 @@ class NeumorphicUI:
         }
         
         .neu-table th {
-            background: linear-gradient(135deg, #E0E5EC 0%, #D1D9E6 100%);
+            background: #F5F6F8;
             padding: 1rem;
             text-align: left;
             font-weight: 600;
@@ -375,10 +375,10 @@ class NeumorphicUI:
             border-radius: 15px;
             padding: 1.5rem;
             margin: 1rem 0;
-            box-shadow: 
-                5px 5px 10px #A3B1C6,
+            box-shadow:
+                5px 5px 10px #BECCD3,
                 -5px -5px 10px #FFFFFF;
-            border-left: 4px solid #6C7EE1;
+            border-left: 4px solid #2E8540;
         }
         
         .neu-insight-title {
